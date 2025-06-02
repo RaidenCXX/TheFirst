@@ -26,4 +26,5 @@
 2D_part/
 build/
 .cache/
+.cache/clangd/index
 
