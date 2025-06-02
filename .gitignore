@@ -1,32 +1,23 @@
-# Prerequisites
-*.d
+# build artifacts
+/build/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/Makefile
+**/compile_commands.json
+**/*.o
+**/*.o.d
+**/TheFirst
+**/nohup.out
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# temporary files
+*~
+*.tmp
+*.log
 
-# Precompiled Headers
-*.gch
-*.pch
+# ignore SFML compiled binaries if you rebuild them
+/liberis/SFML-3.0.0/lib/
+/liberis/SFML-3.0.0/share/
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+# if using CLion or VSCode etc — додати IDE-specific файли
+/.idea/
+/.vscode/
