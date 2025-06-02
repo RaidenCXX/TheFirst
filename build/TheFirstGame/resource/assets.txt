@@ -1,0 +1,211 @@
+TextureSection
+
+Texture       Coin              resource/texture/animation/prop/Coin.png                  0
+
+//PlayerTexture
+Texture       Idle              resource/texture/animation/character/Idle.png             0
+Texture       Run               resource/texture/animation/character/Run.png              0
+Texture       Jump              resource/texture/animation/character/Jump.png             0
+Texture       Sword_Attack_1    resource/texture/animation/character/Sword_Attack_1.png   0
+Texture       Sword_Attack_2    resource/texture/animation/character/Sword_Attack_2.png   0
+Texture       Sword_Attack_3    resource/texture/animation/character/Sword_Attack_3.png   0
+Texture       Ladder_climb      resource/texture/animation/character/ladder_climb.png     0
+Texture       Slide             resource/texture/animation/character/Slide.png            0
+
+GrassTilesTextures
+Texture       GrassTile1        resource/texture/tiles/grass/GrassTile1.png               0
+Texture       GrassTile2        resource/texture/tiles/grass/GrassTile2.png               0
+Texture       GrassTile3        resource/texture/tiles/grass/GrassTile3.png               0
+Texture       GrassTile4        resource/texture/tiles/grass/GrassTile4.png               0
+Texture       GrassTile7        resource/texture/tiles/grass/GrassTile7.png               0
+Texture       GrassTile14       resource/texture/tiles/grass/GrassTile14.png              0
+Texture       GrassTile15       resource/texture/tiles/grass/GrassTile15.png              0
+Texture       GrassTile21       resource/texture/tiles/grass/GrassTile21.png              0
+Texture       GrassTile74       resource/texture/tiles/grass/GrassTile74.png              0
+Texture       GrassTile75       resource/texture/tiles/grass/GrassTile75.png              0
+Texture       GrassTile76       resource/texture/tiles/grass/GrassTile76.png              0
+Texture       GrassTile77       resource/texture/tiles/grass/GrassTile77.png              0
+
+//BridgesTexture
+Texture       Bridge_1          resource/texture/tiles/bridges/Bridge1.png                0
+
+//Platform_and_stairs
+Texture       Ladder_1          resource/texture/platforms_and_stairs/Ladder1.png         0
+Texture       Ladder_2          resource/texture/platforms_and_stairs/Ladder2.png         0
+Texture       Ladder_3          resource/texture/platforms_and_stairs/Ladder3.png         0
+Texture       Ladder_4          resource/texture/platforms_and_stairs/Ladder4.png         0
+Texture       Ladder_5          resource/texture/platforms_and_stairs/Ladder5.png         0
+Texture       Ladder_6          resource/texture/platforms_and_stairs/Ladder6.png         0
+Texture       SmallPlatform_1   resource/texture/platforms_and_stairs/SmallPlatform1.png  0
+Texture       SmallPlatform_2   resource/texture/platforms_and_stairs/SmallPlatform2.png  0
+Texture       SmallPlatform_3   resource/texture/platforms_and_stairs/SmallPlatform3.png  0
+Texture       SmallPlatform_4   resource/texture/platforms_and_stairs/SmallPlatform4.png  0
+Texture       SmallPlatform_5   resource/texture/platforms_and_stairs/SmallPlatform5.png  0
+Texture       SmallPlatform_6   resource/texture/platforms_and_stairs/SmallPlatform6.png  0
+Texture       SmallPlatform_7   resource/texture/platforms_and_stairs/SmallPlatform7.png  0
+Texture       SmallPlatform_8   resource/texture/platforms_and_stairs/SmallPlatform8.png  0
+Texture       SmallPlatform_9   resource/texture/platforms_and_stairs/SmallPlatform9.png  0
+Texture       SmallPlatform_10  resource/texture/platforms_and_stairs/SmallPlatform10.png 0
+Texture       SmallPlatform_11  resource/texture/platforms_and_stairs/SmallPlatform11.png 0
+Texture       SmallPlatform_12  resource/texture/platforms_and_stairs/SmallPlatform12.png 0
+Texture       SmallPlatform_13  resource/texture/platforms_and_stairs/SmallPlatform13.png 0
+Texture       SmallPlatform_14  resource/texture/platforms_and_stairs/SmallPlatform14.png 0
+Texture       SmallPlatform_15  resource/texture/platforms_and_stairs/SmallPlatform15.png 0
+Texture       SmallPlatform_16  resource/texture/platforms_and_stairs/SmallPlatform16.png 0
+Texture       SmallPlatform_17  resource/texture/platforms_and_stairs/SmallPlatform17.png 0
+Texture       SmallPlatform_18  resource/texture/platforms_and_stairs/SmallPlatform18.png 0
+Texture       SmallPlatform_19  resource/texture/platforms_and_stairs/SmallPlatform19.png 0
+Texture       SmallPlatform_20  resource/texture/platforms_and_stairs/SmallPlatform20.png 0
+Texture       SmallPlatform_21  resource/texture/platforms_and_stairs/SmallPlatform21.png 0
+Texture       SmallPlatform_22  resource/texture/platforms_and_stairs/SmallPlatform22.png 0
+Texture       SmallPlatform_23  resource/texture/platforms_and_stairs/SmallPlatform23.png 0
+Texture       Stairs_1          resource/texture/platforms_and_stairs/Stairs1.png         0
+Texture       Stairs_2          resource/texture/platforms_and_stairs/Stairs2.png         0
+Texture       Stairs_3          resource/texture/platforms_and_stairs/Stairs3.png         0
+Texture       Stairs_4          resource/texture/platforms_and_stairs/Stairs4.png         0
+Texture       Stairs_5          resource/texture/platforms_and_stairs/Stairs5.png         0
+
+//BackgroundTextures
+Texture       Layer1            resource/texture/tiles/parallax/Layer1.png                0
+Texture       Layer2            resource/texture/tiles/parallax/Layer2.png                0
+Texture       Layer3            resource/texture/tiles/parallax/Layer3.png                0
+Texture       Layer4.1          resource/texture/tiles/parallax/Layer4_1.png              0
+Texture       Layer4.2          resource/texture/tiles/parallax/Layer4_2.png              0
+Texture       Layer4.3          resource/texture/tiles/parallax/Layer4_3.png              0
+Texture       Layer5.1          resource/texture/tiles/parallax/Layer5_1.png              0
+Texture       Layer5.2          resource/texture/tiles/parallax/Layer5_2.png              0
+Texture       Layer5.3          resource/texture/tiles/parallax/Layer5_3.png              0
+Texture       Layer6.1          resource/texture/tiles/parallax/Layer6_1.png              0
+Texture       Layer6.2          resource/texture/tiles/parallax/Layer6_2.png              0
+Texture       Layer6.3          resource/texture/tiles/parallax/Layer6_3.png              0
+Texture       Layer6.4          resource/texture/tiles/parallax/Layer6_4.png              0
+Texture       Layer6.5          resource/texture/tiles/parallax/Layer6_5.png              0
+Texture       Layer6.6          resource/texture/tiles/parallax/Layer6_6.png              0
+Texture       Layer6.7          resource/texture/tiles/parallax/Layer6_7.png              0
+Texture       Layer6.8          resource/texture/tiles/parallax/Layer6_8.png              0
+Texture       Layer6.9          resource/texture/tiles/parallax/Layer6_9.png              0
+Texture       Layer6.10         resource/texture/tiles/parallax/Layer6_10.png             0
+Texture       Layer6.11         resource/texture/tiles/parallax/Layer6_11.png             0
+Texture       Layer6.12         resource/texture/tiles/parallax/Layer6_12.png             0
+Texture       Layer6.13         resource/texture/tiles/parallax/Layer6_13.png             0
+Texture       Layer6.14         resource/texture/tiles/parallax/Layer6_14.png             0
+Texture       Layer6.15         resource/texture/tiles/parallax/Layer6_15.png             0
+Texture       Layer6.16         resource/texture/tiles/parallax/Layer6_16.png             0
+
+
+//MenuBackground
+Texture       Menu              resource/texture/Menu.jpg                                 0
+
+
+//AnimationSection
+Animation     CoinAnim                    Coin              6   3   2   1
+
+//MenuAnimation
+Animation     MenuStatic                  Menu              1   1   0   0
+
+//PlayerAnimation
+Animation     Idle_Anim                   Idle              4   8   1   1
+Animation     Run_Anim                    Run               6   12  1   1
+Animation     Jump_Anim                   Jump              4   12  1   0
+Animation     Sword_Attack_1_Anim         Sword_Attack_1    5   12  1   0
+Animation     Sword_Attack_2_Anim         Sword_Attack_2    6   12  1   0
+Animation     Sword_Attack_3_Anim         Sword_Attack_3    6   12  1   0
+Animation     Ladder_Climb_Anim           Ladder_climb      4   5   1   1
+
+//GrassTilesAnimation
+Animation     GrassTile1_Static           GrassTile1        1   1   2   0
+Animation     GrassTile2_Static           GrassTile2        1   1   2   0
+Animation     GrassTile3_Static           GrassTile3        1   1   2   0
+Animation     GrassTile4_Static           GrassTile4        1   1   2   0
+Animation     GrassTile7_Static           GrassTile7        1   1   2   0
+Animation     GrassTile14_Static          GrassTile14       1   1   2   0
+Animation     GrassTile15_Static          GrassTile15       1   1   2   0
+Animation     GrassTile21_Static          GrassTile21       1   1   2   0
+Animation     GrassTile_74_Static         GrassTile74       1   1   2   0
+Animation     GrassTile_75_Static         GrassTile75       1   1   2   0
+Animation     GrassTile_76_Static         GrassTile76       1   1   2   0
+Animation     GrassTile_77_Static         GrassTile77       1   1   2   0
+Animation     SmallPlatform_1_Static      SmallPlatform_1   1   1   2   0
+Animation     SmallPlatform_2_Static      SmallPlatform_2   1   1   2   0
+Animation     SmallPlatform_3_Static      SmallPlatform_3   1   1   2   0
+Animation     SmallPlatform_4_Static      SmallPlatform_4   1   1   2   0
+Animation     SmallPlatform_5_Static      SmallPlatform_5   1   1   2   0
+Animation     SmallPlatform_6_Static      SmallPlatform_6   1   1   2   0
+Animation     SmallPlatform_7_Static      SmallPlatform_7   1   1   2   0
+Animation     SmallPlatform_8_Static      SmallPlatform_8   1   1   2   0
+Animation     SmallPlatform_9_Static      SmallPlatform_9   1   1   2   0
+Animation     SmallPlatform_10_Static     SmallPlatform_10  1   1   2   0
+Animation     SmallPlatform_11_Static     SmallPlatform_11  1   1   2   0
+Animation     SmallPlatform_12_Static     SmallPlatform_12  1   1   2   0
+Animation     SmallPlatform_13_Static     SmallPlatform_13  1   1   2   0
+Animation     SmallPlatform_14_Static     SmallPlatform_14  1   1   3   0
+Animation     SmallPlatform_15_Static     SmallPlatform_15  1   1   2   0
+Animation     SmallPlatform_16_Static     SmallPlatform_16  1   1   2   0
+Animation     SmallPlatform_17_Static     SmallPlatform_17  1   1   2   0
+Animation     SmallPlatform_18_Static     SmallPlatform_18  1   1   2   0
+Animation     SmallPlatform_19_Static     SmallPlatform_19  1   1   2   0
+Animation     SmallPlatform_20_Static     SmallPlatform_20  1   1   2   0
+Animation     SmallPlatform_21_Static     SmallPlatform_21  1   1   2   0
+Animation     SmallPlatform_22_Static     SmallPlatform_22  1   1   2   0
+Animation     SmallPlatform_23_Static     SmallPlatform_23  1   1   2   0
+Animation     Stairs_1_Static             Stairs_1          1   1   2   0
+Animation     Stairs_2_Static             Stairs_2          1   1   2   0
+Animation     Stairs_3_Static             Stairs_3          1   1   2   0
+Animation     Stairs_4_Static             Stairs_4          1   1   2   0
+Animation     Stairs_5_Static             Stairs_5          1   1   2   0
+
+
+//BridgesAnimation
+Animation   Bridge_1_Static               Bridge_1          1   1   3   0
+
+//Platform_and_stairs
+Animation     Ladder_1_Static             Ladder_1          1   1   2   0
+Animation     Ladder_2_Static             Ladder_2          1   1   2   0
+Animation     Ladder_3_Static             Ladder_3          1   1   2   0
+Animation     Ladder_4_Static             Ladder_4          1   1   2   0
+Animation     Ladder_5_Static             Ladder_5          1   1   2   0
+Animation     Ladder_6_Static             Ladder_6          1   1   2   0
+
+//BackgroundSection
+Animation     ParalaxLayer_1_Static       Layer1            1   1   7   0
+Animation     ParalaxLayer_2_Static       Layer2            1   1   7   0
+Animation     ParalaxLayer_3_Static       Layer3            1   1   7   0
+Animation     ParalaxLayer_4.1_Static     Layer4.1          1   1   6   0
+Animation     ParalaxLayer_4.2_Static     Layer4.2          1   1   6   0
+Animation     ParalaxLayer_4.3_Static     Layer4.3          1   1   6   0
+Animation     ParalaxLayer_5.1_Static     Layer5.1          1   1   5   0
+Animation     ParalaxLayer_5.2_Static     Layer5.2          1   1   5   0
+Animation     ParalaxLayer_5.3_Static     Layer5.3          1   1   5   0
+Animation     ParalaxLayer_6.1_Static     Layer6.1          1   1   4   0
+Animation     ParalaxLayer_6.2_Static     Layer6.2          1   1   4   0
+Animation     ParalaxLayer_6.3_Static     Layer6.3          1   1   4   0
+Animation     ParalaxLayer_6.4_Static     Layer6.4          1   1   4   0
+Animation     ParalaxLayer_6.5_Static     Layer6.5          1   1   4   0
+Animation     ParalaxLayer_6.6_Static     Layer6.6          1   1   4   0
+Animation     ParalaxLayer_6.7_Static     Layer6.7          1   1   4   0
+Animation     ParalaxLayer_6.8_Static     Layer6.8          1   1   4   0
+Animation     ParalaxLayer_6.9_Static     Layer6.9          1   1   4   0
+Animation     ParalaxLayer_6.10_Static    Layer6.10         1   1   4   0
+Animation     ParalaxLayer_6.11_Static    Layer6.11         1   1   4   0
+Animation     ParalaxLayer_6.12_Static    Layer6.12         1   1   4   0
+Animation     ParalaxLayer_6.13_Static    Layer6.13         1   1   4   0
+Animation     ParalaxLayer_6.14_Static    Layer6.14         1   1   4   0
+Animation     ParalaxLayer_6.15_Static    Layer6.15         1   1   4   0
+Animation     ParalaxLayer_6.16_Static    Layer6.16         1   1   4   0
+
+
+
+//ShaderSection
+Shader        resource/shaders/srgb_correction.frag
+
+
+//FontSection
+Font          Silkscreen-Regular      resource/fonts/Silkscreen-Regular.ttf  
+Font          Default                 resource/fonts/Default.ttf
+
+End
+
+
+
+Type          Name                  NameTexture     FrameCount    Speed   Layer   Repeat
+Animation     MenuStatic            Menu            1             1       2       0
