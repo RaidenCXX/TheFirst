@@ -1,7 +1,0 @@
-TheFirst    1920 1080 60  resource/assets.txt
-
-Scene
-Menu            resource/scene/menu.txt
-ScenePrologue   resource/scene/prologue.txt
-
-End

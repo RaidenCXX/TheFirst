@@ -1,5 +1,0 @@
-Title           TheFirst
-MenuString      New_Game  Continue  Setings  Exit
-Font            Silkscreen-Regular
-
-End

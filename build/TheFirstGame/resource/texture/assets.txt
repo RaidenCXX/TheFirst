@@ -1,3 +1,0 @@
-Texture       Tree1       resource/texture/trees/Tree1.png     0
-Texture       Tree2       resource/texture/trees/Tree2.png     0
-End

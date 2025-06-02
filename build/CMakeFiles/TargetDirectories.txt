@@ -1,4 +1,0 @@
-/home/raiden/Projects/TheFirst/build/CMakeFiles/TheFirst.dir
-/home/raiden/Projects/TheFirst/build/CMakeFiles/copy_resources.dir
-/home/raiden/Projects/TheFirst/build/CMakeFiles/edit_cache.dir
-/home/raiden/Projects/TheFirst/build/CMakeFiles/rebuild_cache.dir
