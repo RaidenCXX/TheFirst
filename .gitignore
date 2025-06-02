@@ -21,3 +21,7 @@
 # if using CLion or VSCode etc — додати IDE-specific файли
 /.idea/
 /.vscode/
+
+#Directory
+2D_part/
+
