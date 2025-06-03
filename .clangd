@@ -1,4 +1,0 @@
-
-CompileFlags:
-  - '-I./liberis/SFML-3.0.0/include'
-

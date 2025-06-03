@@ -3,7 +3,7 @@
 **/CMakeFiles/
 **/CMakeCache.txt
 **/Makefile
-**/compile_commands.json
+/build/compile_commands.json
 **/*.o
 **/*.o.d
 **/TheFirst
