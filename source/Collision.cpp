@@ -1,4 +1,5 @@
 #include "Collision.h"
+#include "Entity.h"
 #include "EntityMemoryPool.h"
 #include "Enums.h"
 #include "Vec2.h"
@@ -7,155 +8,178 @@
 
 [[nodiscard]] Vec2 Collision::getOverlap(Entity& entityA, Entity& entityB)
 {
-  
+  constexpr float epsilon = 0.001f;
+
   CBoundingBox& bboxA       = entityA.getComponent<CBoundingBox>();
   CTransform&   transformA  = entityA.getComponent<CTransform>();
 
   CBoundingBox& bboxB       = entityB.getComponent<CBoundingBox>();
   CTransform&   transformB  = entityB.getComponent<CTransform>();
 
-  float oX = (bboxA.halfSize.x + bboxB.halfSize.x) - std::fabsf((transformA.pos.x + bboxA.offset.x) - (transformB.pos.x + bboxB.offset.x));
-  float oY = (bboxA.halfSize.y + bboxB.halfSize.y) - std::fabsf((transformA.pos.y + bboxA.offset.y) - (transformB.pos.y + bboxB.offset.y));
+  float oX = (bboxA.halfSize.x + bboxB.halfSize.x) - std::fabsf(transformA.pos.x - (transformB.pos.x + bboxB.offset.x));
+  float oY = (bboxA.halfSize.y + bboxB.halfSize.y) - std::fabsf(transformA.pos.y - (transformB.pos.y + bboxB.offset.y));
 
-  Vec2 overlap {0, 0}; 
+  Vec2 overlap{0, 0};
 
-  if (oX> 0 && oY > 0)
+  if(oX > epsilon && oY > epsilon)
   {
     overlap.x = oX;
-    overlap.y = oY;
+    overlap.y = oY; 
   }
-  
+
   return overlap;
 }
+
+
+Vec2 Collision::getPreviousOverlap(Entity& entityA, Entity& entityB)
+{   
+  CBoundingBox& bboxA       = entityA.getComponent<CBoundingBox>();
+  CTransform&   transformA  = entityA.getComponent<CTransform>();
+
+  CBoundingBox& bboxB       = entityB.getComponent<CBoundingBox>();
+  CTransform&   transformB  = entityB.getComponent<CTransform>();
+
+  float oX = (bboxA.halfSize.x + bboxB.halfSize.x) - 
+    std::fabsf(transformA.prevPos.x - (transformB.prevPos.x + bboxB.offset.x ));
+  float oY = (bboxA.halfSize.y + bboxB.halfSize.y) - 
+    std::fabsf(transformA.prevPos.y - (transformB.prevPos.y + bboxB.offset.y ));
+  
+  Vec2 prevOverlap{0, 0};
+  prevOverlap.y = oY > 0 ? oY : 0.0f;
+  prevOverlap.x = oX > 0 ? oX : 0.0f;
+  
+  return prevOverlap;
+}
  
-bool calculatePointOnLine(Vec2& playerCornerPoint, Vec2& entityPointA, Vec2& entityPointB)
+bool isPointUnderLine(const Vec2& playerCornerPoint,const  Vec2& entityPointA,const Vec2& entityPointB)
 {
+  constexpr float epsilon = 0.0001f;
+
+  if(std::abs(entityPointA.x - entityPointB.x) < epsilon)
+  {
+    return playerCornerPoint.x < entityPointA.x;
+  }
+
   float slope = (entityPointA.y - entityPointB.y) / (entityPointA.x - entityPointB.x);
   float b = entityPointA.y - slope * entityPointA.x;
 
   float yLine = slope * playerCornerPoint.x + b;
 
-  return playerCornerPoint.y < yLine;
+  return playerCornerPoint.y > yLine;
 }
 
+void slide(Entity& entityA, Entity& entityB, Vec2& linesIntersection)
+{
+  CTransform& trPlayer  = entityA.getComponent<CTransform>();
+  CState& sPlayer       = entityA.getComponent<CState>();
+  CBoundingBox& bPlayer = entityA.getComponent<CBoundingBox>();
+
+  CTransform& trObject   = entityB.getComponent<CTransform>();
+  
+  trPlayer.pos = linesIntersection;
+  
+  trPlayer.pos += trObject.dir;
+
+  sPlayer.onGround = false;
+  sPlayer.slide = true;
+}
+
+Vec2 linesIntersection(const Vec2& pA1, const Vec2& pA2, const Vec2& pB1, const Vec2& pB2)
+{
+  float denominator = (pA1.x - pA2.x) * (pB1.y - pB2.y) - (pA1.y - pA2.y) * (pB1.x - pB2.x);
+
+  if (denominator == 0.0f)
+      return Vec2{0.0f, 0.0f}; 
+
+  float xNum = (pA1.x * pA2.y - pA1.y * pA2.x) * (pB1.x - pB2.x)
+             - (pA1.x - pA2.x) * (pB1.x * pB2.y - pB1.y * pB2.x);
+
+  float yNum = (pA1.x * pA2.y - pA1.y * pA2.x) * (pB1.y - pB2.y)
+             - (pA1.y - pA2.y) * (pB1.x * pB2.y - pB1.y * pB2.x);
+
+  float x = xNum / denominator;
+  float y = yNum / denominator;
+
+  return Vec2{x, y};
+}
 
 void Collision::resolveCollision(Entity& entityA, Entity& entityB)
 {
-  
   Vec2 overlap = getOverlap(entityA, entityB);
-  if (overlap.x <= 0 || overlap.y <= 0)
+  if (overlap.x == 0 || overlap.y == 0)
     return;
 
   CTransform& transformA = entityA.getComponent<CTransform>();
   CTransform& transformB = entityB.getComponent<CTransform>();
 
-  CBoundingBox& bboxA    = entityA.getComponent<CBoundingBox>();
-  CBoundingBox& bboxB    = entityB.getComponent<CBoundingBox>();
-  
   CTag& tagA = entityA.getComponent<CTag>();
   CTag& tagB = entityB.getComponent<CTag>();
- 
-  if(tagA.tag == Object::Player && 
-    (tagB.tag == Object::TileBbox ||
-    tagB.tag == Object::Bridge ||
-    tagB.tag == Object::SmallPlatform))
+
+  CBoundingBox& bboxA = entityA.getComponent<CBoundingBox>();
+  CBoundingBox& bboxB = entityB.getComponent<CBoundingBox>();
+
+
+  if (tagA.tag == Object::Player &&
+      (tagB.tag == Object::TileBbox || tagB.tag == Object::Bridge || tagB.tag == Object::SmallPlatform))
   {
-    if (overlap.x < overlap.y)
+    
+    Vec2 prevOverlap = getPreviousOverlap(entityA, entityB);
+    
+    if (prevOverlap.x > 0) // Vertical collision |
     {
-      if (transformA.pos.x < transformB.pos.x)
+  
+      if (transformA.prevPos.y < transformB.prevPos.y)
       {
+        // Down → Up
+        transformA.pos.y -= overlap.y;
+        transformA.vel.y  = 0;
+        if (entityA.hasComponent<CGravity>())
+            entityA.getComponent<CGravity>().acceleration = 0.0f;
+        if (entityA.hasComponent<CState>())
+            entityA.getComponent<CState>().onGround = true;
+      }
+      else if(transformA.prevPos.y > transformB.prevPos.y) 
+      {
+        // Up → Down
+        transformA.pos.y += overlap.y;
+        transformA.vel.y  = 0;
+      }
+    }
+    if(prevOverlap.y > 0) // Horizontal collision <->
+    {
+      if (transformA.prevPos.x < transformB.prevPos.x)
+      {
+        // Left → Right
         transformA.pos.x -= overlap.x;
       }
-      else
+      else if (transformA.prevPos.x > transformB.prevPos.x)
       {
+        // Right → Left
         transformA.pos.x += overlap.x;
       }
       transformA.vel.x = 0;
-    }
-    else
-    {
-      if (transformA.pos.y < transformB.pos.y)
-      {
-        // Down up 
-        transformA.pos.y -= overlap.y;
-        transformA.vel.y = 0;
-
-        if (entityA.hasComponent<CGravity>())
-          entityA.getComponent<CGravity>().acceleration = 0.0f;
-
-        if (entityA.hasComponent<CState>())
-          entityA.getComponent<CState>().onGround = true;
-      }
-      else
-      {
-        // Up down
-        transformA.pos.y += overlap.y;
-        transformA.vel.y = 0;
-      }
     }
   }
-  else if(tagA.tag == Object::Player && 
-    (tagB.tag == Object::SlideRBbox ||
-    tagB.tag == Object::SlideLBbox))
+  if (tagA.tag == Object::Player && 
+      (tagB.tag == Object::SlideRBbox || tagB.tag == Object::SlideLBbox))
   {
-    //std::cerr << "Tag A: "<< static_cast<int>(tagA.tag) << "Tag B:" << static_cast<int>(tagB.tag) << std::endl;
-    if (overlap.x < overlap.y)
-    {
-      //Left to right
-      if (transformA.pos.x < transformB.pos.x)
-      {
-        transformA.pos.x -= overlap.x;
-      }
-      //Right to left
-      else
-      {
-        transformA.pos.x += overlap.x;
-      }
-      transformA.vel.x = 0;
-    }
-    else
-    {
-      if (transformA.pos.y < transformB.pos.y)
-      {
-        // Down up 
-        transformA.vel.y -= overlap.y;
-        transformA.vel.y = 0;
+      Vec2 playerPoint = transformA.pos;
+      playerPoint.y += bboxA.halfSize.y / 2;
 
-        if (entityA.hasComponent<CGravity>())
-          entityA.getComponent<CGravity>().acceleration = 0.0f;
+      Vec2 playerPointPrev = transformA.prevPos;
+      playerPointPrev.y += bboxA.halfSize.y / 2;
 
-        if (entityA.hasComponent<CState>())
-          entityA.getComponent<CState>().onGround = true;
-      }
-      else
+      Vec2 pointA = transformB.pos - bboxB.halfSize;
+      Vec2 pointB = transformB.pos + bboxB.halfSize;
+
+      if (isPointUnderLine(playerPoint, pointA, pointB))
       {
-        // Up down
-        if(tagB.tag == Object::SlideRBbox)
-        {
-          Vec2 playerLeftDownPoint = transformA.pos + bboxA.size.y;
-          Vec2 pointA = transformB.pos;
-          Vec2 pointB = transformB.pos + bboxB.size;
-          /*Is the lower left corner of the player above the
-          perpendicular line which is located at 45 degrees?
-          If true left corner of player is above! */ 
-          bool state = calculatePointOnLine(playerLeftDownPoint, pointA, pointB);
-          if(state)
-          {
+          Vec2 intersectP = linesIntersection(playerPointPrev, playerPoint, pointA, pointB);
+          intersectP.y -= bboxA.halfSize.y / 2;
 
-          }
-          else
-          {
-            transformA.pos = transformA.prevPos;
-            transformA.vel = transformB.dir;
-          }
-          
-        }
-        else if (tagB.tag == Object::SlideLBbox)
-        {
-        
-        }
+          slide(entityA, entityB, intersectP);
+          return;
       }
-    }
   }
   if (tagA.tag == Object::Player &&
     tagB.tag == Object::Ladder)

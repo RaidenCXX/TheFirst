@@ -125,7 +125,7 @@ public:
   bool onGround = false;
   bool canClimb = false;
   bool climp = false;
-  
+  bool slide = false;  
 
   CState () = default;
   CState (bool activate) :Component(true) { }

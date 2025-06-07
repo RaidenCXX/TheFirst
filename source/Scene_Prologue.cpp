@@ -2,6 +2,7 @@
 #include "EntityMemoryPool.h"
 #include "Enums.h"
 #include "JoystickEnum.h"
+#include "SFML/Graphics/CircleShape.hpp"
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/Sprite.hpp"
@@ -37,6 +38,9 @@
 //Camera properties
 #define CAMERA_ZOOM 0.3f
 
+
+#define SLIDE_SPEED 4.0f
+
 void ScenePrologue::init(const std::string sceneConfigPath)
 {
   //Keyboard Key
@@ -48,6 +52,9 @@ void ScenePrologue::init(const std::string sceneConfigPath)
   registerAction(static_cast<int>(sf::Keyboard::Key::A),      "Left");
   registerAction(static_cast<int>(sf::Keyboard::Key::Right),  "Right");
   registerAction(static_cast<int>(sf::Keyboard::Key::D),      "Right");
+  registerAction(static_cast<int>(sf::Keyboard::Key::Space),  "Jump");
+
+  registerAction(static_cast<int>(sf::Keyboard::Key::B),       "Bound");
 
   //Joystick
   registerAction(static_cast<int>(Joystick::key::LJUp),       "Up",     false);
@@ -139,6 +146,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       Entity e = m_entityManager.addEntity(Object::TileBbox);
  
       e.addComponent<CTransform>(newPos);
+      e.getComponent<CTransform>().prevPos = e.getComponent<CTransform>().pos;
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x,  e.getComponent<CAnimation>().animation.getSize().y);
@@ -159,7 +167,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
  
       e.addComponent<CTransform>(newPos);
       e.getComponent<CTransform>().dir = type == Object::SlideRBbox? 
-        Vec2{1.f, -1.f} : Vec2{-1.f, -1.f};
+        Vec2{SLIDE_SPEED, -SLIDE_SPEED} : Vec2{-SLIDE_SPEED, -SLIDE_SPEED};
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x,  e.getComponent<CAnimation>().animation.getSize().y);
@@ -176,11 +184,12 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       Entity e = m_entityManager.addEntity(Object::Bridge);
  
       e.addComponent<CTransform>(newPos);
+      e.getComponent<CTransform>().prevPos = e.getComponent<CTransform>().pos;
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       
       Animation& bbox = m_gameEngine->getAssets().getAnimation(animationName);
-      e.addComponent<CBoundingBox>(bbox.getSize().x , bbox.getSize().y/2, Vec2{0.f, bbox.getSize().y/4});
+      e.addComponent<CBoundingBox>(bbox.getSize().x , bbox.getSize().y, Vec2{0.f, bbox.getSize().y / 2});
     }
     else if(convertToEnum(token) == Object::Tile)
     {
@@ -210,6 +219,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       Entity e = m_entityManager.addEntity(Object::Ladder);
  
       e.addComponent<CTransform>(newPos);
+      e.getComponent<CTransform>().prevPos = e.getComponent<CTransform>().pos;
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x * 0.2, e.getComponent<CAnimation>().animation.getSize().y);
@@ -227,6 +237,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       Entity e = m_entityManager.addEntity(Object::SmallPlatform);
  
       e.addComponent<CTransform>(newPos);
+      e.getComponent<CTransform>().prevPos = e.getComponent<CTransform>().pos;
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x,  e.getComponent<CAnimation>().animation.getSize().y);
@@ -325,13 +336,10 @@ void  ScenePrologue::sRender()
     newCenter.y = transform.pos.y - deadZoneHeight / 2.0f;
   
   float halfWidth = viewSize.x / 2.0f;
-  // float halfHeight = viewSize.y / 2.0f;  limits for y axis
 
   if (newCenter.x - halfWidth < 0)
     newCenter.x = halfWidth;
 
-  // if (newCenter.y - halfHeight < 0)  limit for y axis
-  //   newCenter.y = halfHeight;
 
   m_view.setCenter(newCenter);
   m_gameEngine->getWindow().setView(m_view);
@@ -386,7 +394,7 @@ void  ScenePrologue::sRender()
   }
   
   //Rendering bounding box 
-  renderBoundingBox(false);  
+  renderBoundingBox(m_drawCollision);  
 
   m_gameEngine->getWindow().display();
 }
@@ -396,9 +404,13 @@ void ScenePrologue::renderBoundingBox(bool active)
   if(active)
   {
     sf::RectangleShape rect;
+    sf::CircleShape circl;
     rect.setFillColor(sf::Color::Transparent);
     rect.setOutlineThickness(-0.3f);
     rect.setOutlineColor(sf::Color::White);
+
+    circl.setFillColor(sf::Color::Cyan);
+    circl.setRadius(2.f);
     for (Entity& e : m_entityManager.getEntities())
     {
       if(e.getComponent<CActive>().active && e.getComponent<CBoundingBox>().has)
@@ -406,9 +418,37 @@ void ScenePrologue::renderBoundingBox(bool active)
         rect.setSize(sf::Vector2f{e.getComponent<CBoundingBox>().size.x, e.getComponent<CBoundingBox>().size.y});
         rect.setOrigin(sf::Vector2f{e.getComponent<CBoundingBox>().halfSize.x, e.getComponent<CBoundingBox>().halfSize.y});
       
+        if(e.getComponent<CTag>().tag == Object::Player)
+        {
+          circl.setOrigin(sf::Vector2f{circl.getRadius(), circl.getRadius()});
+          circl.setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x,
+            e.getComponent<CTransform>().pos.y + e.getComponent<CBoundingBox>().halfSize.y});
+        }
+        else if(e.getComponent<CTag>().tag == Object::SlideRBbox)
+        {
+          circl.setOrigin(sf::Vector2f{circl.getRadius(), circl.getRadius()});
+          circl.setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x - e.getComponent<CBoundingBox>().halfSize.x,
+            e.getComponent<CTransform>().pos.y - e.getComponent<CBoundingBox>().halfSize.y});
+          m_gameEngine->getWindow().draw(circl);
+
+          circl.setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x + e.getComponent<CBoundingBox>().halfSize.x,
+            e.getComponent<CTransform>().pos.y + e.getComponent<CBoundingBox>().halfSize.y});
+        }
+        else if(e.getComponent<CTag>().tag == Object::SlideLBbox)
+        {
+          circl.setOrigin(sf::Vector2f{circl.getRadius(), circl.getRadius()});
+          circl.setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x + e.getComponent<CBoundingBox>().halfSize.x,
+            e.getComponent<CTransform>().pos.y - e.getComponent<CBoundingBox>().halfSize.y});
+          m_gameEngine->getWindow().draw(circl);
+
+          circl.setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x - e.getComponent<CBoundingBox>().halfSize.x,
+            e.getComponent<CTransform>().pos.y + e.getComponent<CBoundingBox>().halfSize.y});
+        }
+
         rect.setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x + e.getComponent<CBoundingBox>().offset.x,
           e.getComponent<CTransform>().pos.y + e.getComponent<CBoundingBox>().offset.y});
         m_gameEngine->getWindow().draw(rect);
+        m_gameEngine->getWindow().draw(circl);
       }
     }
   }
@@ -449,6 +489,10 @@ void ScenePrologue::sDoAction(const Action& action)
     else if(action.getName()  == "Attack")
     {
       input.attack = true;
+    }
+    else if (action.getName() == "Bound")
+    {
+      m_drawCollision = !m_drawCollision;
     }
   }
   else if(!action.getType())                       //If the key is released
@@ -515,12 +559,12 @@ void ScenePrologue::sMovement()
       CAttack& cAttack    = e.getComponent<CAttack>();
 
       // === ATTACK INPUT ===
-      if (cInput.attack)
+      if (cInput.attack && !cState.slide)
       {
-        // Атака обробляється окремо в sAttack
+        // The attack is handled separately in sAttack
       }
       // === SHOOT INPUT ===
-      else if (cInput.shoot)
+      else if (cInput.shoot && !cState.slide)
       {
         cInput.canShoot = true;
       }
@@ -528,7 +572,7 @@ void ScenePrologue::sMovement()
       // === LADDER MOVEMENT ===
       if (cState.canClimb)
       {
-        // Початок лазіння вгору
+        // Start of climbing up
         if (cInput.up)
         {
           cState.climp      = true;
@@ -536,7 +580,7 @@ void ScenePrologue::sMovement()
           cTransform.vel.y  = -SPEED_VERTICAL;
           changeAnimation(e, "Ladder_Climb_Anim");
         }
-        // Початок лазіння вниз
+        // Start of climbing down
         else if (cInput.down)
         {
           cState.climp      = true;
@@ -544,24 +588,24 @@ void ScenePrologue::sMovement()
           cTransform.vel.y  = SPEED_VERTICAL;
           changeAnimation(e, "Ladder_Climb_Anim");
         }
-        // Якщо вже ліземо — тримати анімацію і швидкість по Y
+        // If we are already climbing, keep the animation and speed along Y
         else if (cState.climp)
         {
           cTransform.vel.y = 0.0f;
           changeAnimation(e, "Ladder_Climb_Anim");
           e.getComponent<CAnimation>().animation.reset();
         }
-        // Якщо просто біля драбини — нічого не робимо з вертикальним рухом
+        // If you are just near a ladder, you are not doing anything with vertical movement.
       }
       else if(!cState.canClimb)
       {
         cState.climp = false;
       }
 
-      // === HORIZONTAL MOVE (доступний завжди, навіть коли canClimb) ===
+      // === HORIZONTAL MOVE (always available, even when canClimb) ===
       if (!cAttack.attacking)
       {
-        if (cInput.left)
+        if (cInput.left && !cState.slide)
         {
           cTransform.vel.x -= SPEED;
           cTransform.scale.x = -1.0f;
@@ -569,12 +613,12 @@ void ScenePrologue::sMovement()
           if (cState.onGround)
             changeAnimation(e, "Run_Anim");
         }
-        else if (cInput.right)
+        else if (cInput.right && !cState.slide)
         {
           cTransform.vel.x += SPEED;
           cTransform.scale.x = 1.0f;
 
-          if (cState.onGround)
+          if (cState.onGround && !cState.slide)
             changeAnimation(e, "Run_Anim");
         }
       }
@@ -589,11 +633,18 @@ void ScenePrologue::sMovement()
         else if (!cState.onGround && !cState.climp)
         {
           changeAnimation(e, "Jump_Anim", false);
+          cTransform.scale.x = (cTransform.prevPos.x - cTransform.pos.x) <= 0 ?
+            1 : -1;
         }
       }
 
+      if(cState.slide)
+      {
+        changeAnimation(e, "Slide_Anim", false);
+      }
+
       // === JUMP ===
-      if (cInput.jumpPressed && cState.onGround)
+      if (cInput.jumpPressed && (cState.onGround || cState.slide))
       {
         cTransform.vel.y = -gravity.jumpVelocity;
         cState.onGround  = false;
@@ -601,12 +652,12 @@ void ScenePrologue::sMovement()
         changeAnimation(e, "Jump_Anim", false);
       }
 
-      // === GRAVITY (працює тільки якщо не лазимо) ===
+      // === GRAVITY (only works if we don't climb) ===
       if (gravity.has && !cState.climp)
       {
         gravity.acceleration += gravity.gravity;
 
-        // Додаткове прискорення під час падіння
+        // Additional acceleration during a fall
         if (cTransform.vel.y > 0.0f)
         {
           cTransform.vel.y += gravity.gravity * (gravity.fallMultiplier - 1.0f);
@@ -614,7 +665,7 @@ void ScenePrologue::sMovement()
 
         cTransform.vel.y += gravity.acceleration;
 
-        // Обмеження максимальної швидкості падіння
+        // Maximum fall speed limit
         if (cTransform.vel.y > gravity.maxSpeedFall)
         {
           cTransform.vel.y = gravity.maxSpeedFall;
@@ -631,8 +682,9 @@ void ScenePrologue::sMovement()
       // === RESET jumpPressed AFTER FRAME ===
       cInput.jumpPressed = false;
 
-      // === RESET canClimb — оновиться колізією наступного кадру ===
+      // === RESET canClimb — will be updated with the collision of the next frame ===
       cState.canClimb = false;
+      cState.slide = false;
     }
   }
 }

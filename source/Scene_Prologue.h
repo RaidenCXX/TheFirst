@@ -20,6 +20,7 @@ class ScenePrologue : public Scene
 	bool									        m_drawGrid = false;
   const std::vector<float>      m_paralaxFactors = {0.f, 0.0f, 0.0f, 0.2f, 0.2f, 0.6f, 0.7f, 0.8};
   sf::Text                      m_gridText;
+  
 
   
   void                playerInit(Vec2& pos);
