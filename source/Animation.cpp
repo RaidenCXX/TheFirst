@@ -86,6 +86,25 @@ void Animation::update(sf::Time deltaTime)
   }
 }
 
+void Animation::update()
+{
+  if (m_frameCount == 1) return;
+
+    m_animFrame++;
+
+    if (m_animFrame >= m_frameCount)
+    {
+        m_animFrame = 1;
+    }
+
+    sf::IntRect rect(
+      sf::Vector2i(static_cast<int>(m_animFrame * m_size.x), 0),
+      sf::Vector2i(static_cast<int>(m_size.x), static_cast<int>(m_size.y))
+    );
+
+    m_sprite.setTextureRect(rect);
+
+}
 void Animation::reset()
 {
   m_animFrame = 0;

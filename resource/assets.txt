@@ -12,7 +12,7 @@ Texture       Sword_Attack_3    resource/texture/animation/character/Sword_Attac
 Texture       Ladder_climb      resource/texture/animation/character/ladder_climb.png     0
 Texture       Slide             resource/texture/animation/character/Slide.png            0
 
-GrassTilesTextures
+//GrassTilesTextures
 Texture       GrassTile1        resource/texture/tiles/grass/GrassTile1.png               0
 Texture       GrassTile2        resource/texture/tiles/grass/GrassTile2.png               0
 Texture       GrassTile3        resource/texture/tiles/grass/GrassTile3.png               0
@@ -94,8 +94,11 @@ Texture       Layer6.15         resource/texture/tiles/parallax/Layer6_15.png   
 Texture       Layer6.16         resource/texture/tiles/parallax/Layer6_16.png             0
 
 
-//MenuBackground
+//MenuBackgroundTexture
 Texture       Menu              resource/texture/Menu.jpg                                 0
+
+//UiSectionTexture
+Texture       Loading           resource/texture/animation/general/Loading.png            0
 
 
 //AnimationSection
@@ -198,6 +201,8 @@ Animation     ParalaxLayer_6.15_Static    Layer6.15         1   1   4   0
 Animation     ParalaxLayer_6.16_Static    Layer6.16         1   1   4   0
 
 
+//UiSection
+Animation     Loading_Anim              Loading             16  1   0   1 
 
 //ShaderSection
 Shader        resource/shaders/srgb_correction.frag
@@ -206,6 +211,8 @@ Shader        resource/shaders/srgb_correction.frag
 //FontSection
 Font          Silkscreen-Regular      resource/fonts/Silkscreen-Regular.ttf  
 Font          Default                 resource/fonts/Default.ttf
+
+
 
 End
 

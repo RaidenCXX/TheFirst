@@ -5,6 +5,11 @@
 #include <vector>
 class NavigationNodeManager
 {
-  std::vector<NavigationNode> m_navigationMeshes; 
+  std::vector<NavigationNode>  m_navigationNodes;
+  unsigned short               m_nodesCount;
 
+public:
+  NavigationNodeManager();
+  NavigationNode&              addNode(NavigationNode&& node);
+  std::vector<NavigationNode>& getNodes();
 };

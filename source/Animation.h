@@ -30,6 +30,7 @@ class Animation
   Animation& operator=(const Animation& animation);
 
   void update(sf::Time deltaTime);
+  void update();
   void reset();
   const bool isFinished() const;
 

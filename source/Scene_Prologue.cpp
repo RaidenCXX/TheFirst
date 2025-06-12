@@ -1,4 +1,5 @@
 #include "Scene_Prologue.h"
+#include "Assets.h"
 #include "EntityMemoryPool.h"
 #include "Enums.h"
 #include "JoystickEnum.h"
@@ -6,6 +7,7 @@
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/Sprite.hpp"
+#include "SFML/System/Angle.hpp"
 #include "SFML/System/Time.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Keyboard.hpp"
@@ -14,9 +16,14 @@
 #include "Action.h"
 #include "Vec2.h"
 #include "Collision.h"
+#include <algorithm>
+#include <chrono>
+#include <condition_variable>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <string>
+#include <thread>
 #include "Weapon.h"
 #include "math.h"
 
@@ -65,10 +72,37 @@ void ScenePrologue::init(const std::string sceneConfigPath)
   registerAction(static_cast<int>(Joystick::key::X),          "Attack", false);  
   registerAction(static_cast<int>(Joystick::key::Y),          "Shoot",  false);  
 
-  loadLevel(sceneConfigPath); 
-
   m_view = m_gameEngine->getWindow().getDefaultView();
   m_view.zoom(CAMERA_ZOOM);    
+ 
+  size_t& counter = m_activeThreadCount;
+  counter = 2;
+  std::thread lLoader(&ScenePrologue::loadLevel, this, sceneConfigPath);
+  std::thread nLoader(&ScenePrologue::loadNodeMesh, this, sceneConfigPath); 
+  
+  std::unique_lock<std::mutex> lock(m_loaderMutex);
+  
+  
+  sf::RenderWindow& w = m_gameEngine->getWindow();
+  Animation& anim = m_gameEngine->getAssets().getAnimation("Loading_Anim");
+  anim.getSprite().setOrigin(sf::Vector2f{anim.getSize().x / 2, anim.getSize().y / 2});
+  anim.getSprite().setPosition(sf::Vector2f{w.getSize().x * 0.9f, w.getSize().y * 0.9f});
+  anim.getSprite().setScale(sf::Vector2f{5.f, 5.f});
+  while (counter != 0)
+  {
+    m_cv.wait_for(lock, std::chrono::milliseconds(100));
+
+    w.clear(sf::Color::Black);
+    anim.update();
+    w.draw(anim.getSprite());
+    w.display();
+    
+  }
+
+  lLoader.join();
+  nLoader.join();
+  
+  // loadLevel(sceneConfigPath);
 }
 
 std::string getFirstWord(const std::string& str)
@@ -262,7 +296,27 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       std::cerr << "End of file" << std::endl;
       stream.close();
     }
-  } 
+  }
+  std::lock_guard<std::mutex> lock(m_loaderMutex);
+  m_activeThreadCount--;
+  m_cv.notify_one();
+}
+
+void  ScenePrologue::loadNodeMesh(const std::string sceneConfigPath)
+{
+  // std::ifstream stream(sceneConfigPath);
+  // std::string token;
+
+  // while (stream.good())
+  // {
+  //   stream >> token; 
+  // }
+  
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+
+  std::lock_guard<std::mutex> lock(m_loaderMutex);
+  m_activeThreadCount--;
+  m_cv.notify_one();
 }
 
 Vec2  ScenePrologue::gridToMidPixel(float gridX, float gridY)
