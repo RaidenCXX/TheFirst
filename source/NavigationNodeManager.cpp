@@ -10,8 +10,6 @@ NavigationNodeManager::NavigationNodeManager()
 
 NavigationNode& NavigationNodeManager::addNode(NavigationNode&& node)
 {
-  node.id = m_nodesCount;
-  m_nodesCount++;
   m_navigationNodes.emplace_back(std::move(node));
   return m_navigationNodes.back();
 }

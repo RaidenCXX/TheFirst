@@ -167,3 +167,17 @@ public:
       this->firstWeapon = &weaponInventory[0];
     }
 };
+
+class CEnemyAI :public Component
+{
+public:
+  float                       patrolDistance;
+  EnemyState                  enemyState;
+  std::vector<unsigned short> path;
+  unsigned int                curentPathIndex;
+
+
+  CEnemyAI() :patrolDistance(0), enemyState(EnemyState::None) {}
+  CEnemyAI(EnemyState enemyState, float patrolDistance)
+    :patrolDistance(patrolDistance), enemyState(enemyState) {}
+};

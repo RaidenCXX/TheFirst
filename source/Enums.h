@@ -4,6 +4,7 @@ enum class Object
 {
   None      = 0,
   Player,
+  Mushroom,
   TileBbox,
   Tile,
   SlideRBbox,
@@ -18,4 +19,18 @@ enum class Object
 enum class Wepon
 {
 
+};
+
+enum class EnemyState
+{
+  None    = 0,
+  Patrol,
+  Attack
+};
+
+enum class NNType //Navigation Node Type
+{
+  None = 0,
+  Transitional,
+  End
 };

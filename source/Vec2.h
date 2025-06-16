@@ -32,7 +32,9 @@ public:
   Vec2& operator=(const Vec2& vec2);
 
 	float lenght() const;
-	Vec2& normalize();
+	float distance(Vec2 vec2) const;
+  Vec2& normalize();
+  
 
 	Vec2& clamp(float min, float max);
 };

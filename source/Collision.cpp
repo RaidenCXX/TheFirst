@@ -2,6 +2,7 @@
 #include "Entity.h"
 #include "EntityMemoryPool.h"
 #include "Enums.h"
+#include "NavigationNode.h"
 #include "Vec2.h"
 #include <cmath>
 
@@ -18,6 +19,27 @@
 
   float oX = (bboxA.halfSize.x + bboxB.halfSize.x) - std::fabsf(transformA.pos.x - (transformB.pos.x + bboxB.offset.x));
   float oY = (bboxA.halfSize.y + bboxB.halfSize.y) - std::fabsf(transformA.pos.y - (transformB.pos.y + bboxB.offset.y));
+
+  Vec2 overlap{0, 0};
+
+  if(oX > epsilon && oY > epsilon)
+  {
+    overlap.x = oX;
+    overlap.y = oY; 
+  }
+
+  return overlap;
+}
+
+[[nodiscard]] Vec2 Collision::getOverlap(Entity& entity, NavigationNode& NNode)
+{
+  constexpr float epsilon = 0.001f;
+
+  CBoundingBox& bboxA       = entity.getComponent<CBoundingBox>();
+  CTransform&   transformA  = entity.getComponent<CTransform>();
+
+  float oX = (bboxA.halfSize.x + NNode.size / 2) - std::fabsf(transformA.pos.x - NNode.pos.x);
+  float oY = (bboxA.halfSize.y + NNode.size / 2) - std::fabsf(transformA.pos.y - NNode.pos.y);
 
   Vec2 overlap{0, 0};
 
@@ -51,6 +73,25 @@ Vec2 Collision::getPreviousOverlap(Entity& entityA, Entity& entityB)
   return prevOverlap;
 }
  
+Vec2 Collision::getPreviousOverlap(Entity& entity, NavigationNode& NNode)
+{   
+  CBoundingBox& bboxA       = entity.getComponent<CBoundingBox>();
+  CTransform&   transformA  = entity.getComponent<CTransform>();
+
+  Vec2&         transformB  = NNode.pos;
+
+  float oX = (bboxA.halfSize.x + NNode.size / 2) - 
+    std::fabsf(transformA.prevPos.x - NNode.pos.x);
+  float oY = (bboxA.halfSize.y + NNode.size / 2) - 
+    std::fabsf(transformA.prevPos.y - NNode.pos.y);
+  
+  Vec2 prevOverlap{0, 0};
+  prevOverlap.y = oY > 0 ? oY : 0.0f;
+  prevOverlap.x = oX > 0 ? oX : 0.0f;
+  
+  return prevOverlap;
+}
+
 bool isPointUnderLine(const Vec2& playerCornerPoint,const  Vec2& entityPointA,const Vec2& entityPointB)
 {
   constexpr float epsilon = 0.0001f;
@@ -119,7 +160,7 @@ void Collision::resolveCollision(Entity& entityA, Entity& entityB)
   CBoundingBox& bboxB = entityB.getComponent<CBoundingBox>();
 
 
-  if (tagA.tag == Object::Player &&
+  if ((tagA.tag == Object::Player || tagA.tag == Object::Mushroom) &&
       (tagB.tag == Object::TileBbox || tagB.tag == Object::Bridge || tagB.tag == Object::SmallPlatform))
   {
     
@@ -208,4 +249,18 @@ void Collision::resolveCollision(Entity& entityA, Entity& entityB)
       }
     }
   }
+}
+
+bool Collision::NNodeCollision(Entity& entity, NavigationNode& NNode)
+{
+  Vec2 overlap = getOverlap(entity, NNode);
+  if (overlap.x == 0 || overlap.y == 0)
+    return false;
+
+  return true;
+
+  // CTransform& transformA = entity.getComponent<CTransform>();
+  // CTag& tagA = entity.getComponent<CTag>();
+  //
+  // Vec2 prevOverlap = getPreviousOverlap(entity, NNode);
 }

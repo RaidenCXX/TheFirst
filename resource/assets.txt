@@ -12,6 +12,16 @@ Texture       Sword_Attack_3    resource/texture/animation/character/Sword_Attac
 Texture       Ladder_climb      resource/texture/animation/character/ladder_climb.png     0
 Texture       Slide             resource/texture/animation/character/Slide.png            0
 
+//EnemiesTexture
+Texture       Mushroom_Attack   resource/texture/animation/enemies/Mushroom-Attack.png    0
+Texture       Mushroom_AttackWithStun  resource/texture/animation/enemies/Mushroom-AttackWithStun.png  0
+Texture       Mushroom_Die      resource/texture/animation/enemies/Mushroom-Die.png       0
+Texture       Mushroom_Hit      resource/texture/animation/enemies/Mushroom-Hit.png       0
+Texture       Mushroom_Idle     resource/texture/animation/enemies/Mushroom-Idle.png      0
+Texture       Mushroom_Run      resource/texture/animation/enemies/Mushroom-Run.png       0
+Texture       Mushroom_Stun     resource/texture/animation/enemies/Mushroom-Stun.png      0
+
+
 //GrassTilesTextures
 Texture       GrassTile1        resource/texture/tiles/grass/GrassTile1.png               0
 Texture       GrassTile2        resource/texture/tiles/grass/GrassTile2.png               0
@@ -116,6 +126,16 @@ Animation     Sword_Attack_2_Anim         Sword_Attack_2    6   12  1   0
 Animation     Sword_Attack_3_Anim         Sword_Attack_3    6   12  1   0
 Animation     Ladder_Climb_Anim           Ladder_climb      4   5   1   1
 Animation     Slide_Anim                  Slide             2   2   1   1
+
+//EnemiesAnimation
+Animation     Mushroom_Attack_Anim        Mushroom_Attack           10  2   2   0 
+Animation     Mushroom_AttackStun_Anim    Mushroom_AttackWithStun   24  4   2   0 
+Animation     Mushroom_Die_Anim           Mushroom_Die              24  4   2   0 
+Animation     Mushroom_Hit_Anim           Mushroom_Hit              5   2   2   1
+Animation     Mushroom_Idle_Anim          Mushroom_Idle             7   7   2   1
+Animation     Mushroom_Run_Anim           Mushroom_Run              8   2   2   1
+Animation     Mushroom_Stun_Anim          Mushroom_Stun             12  2   2   1    
+
 
 //GrassTilesAnimation
 Animation     GrassTile1_Static           GrassTile1        1   1   2   0

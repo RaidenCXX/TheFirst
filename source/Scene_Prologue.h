@@ -50,4 +50,5 @@ public:
           void        sMovement();
           void        sAttack(sf::Time deltaTime);
           void        sCollision();
+          void        sEnemyAI();
 };

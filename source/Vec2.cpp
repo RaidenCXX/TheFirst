@@ -96,6 +96,12 @@ float Vec2::lenght() const
 	return  sqrtf(x * x + y * y);
 }
 
+float Vec2::distance(Vec2 vec2) const
+{
+  vec2 - *this;
+  return vec2.lenght();
+}
+
 Vec2& Vec2::normalize()
 {
 	float length = lenght();
@@ -103,6 +109,7 @@ Vec2& Vec2::normalize()
 	y /= length;
 	return *this;
 }
+
 
 Vec2& Vec2::clamp(float min, float max)
 {
@@ -125,4 +132,3 @@ Vec2& Vec2::clamp(float min, float max)
 	}
 	return *this;
 }
-
