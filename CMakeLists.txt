@@ -23,7 +23,7 @@ cmake_minimum_required(VERSION 3.31)
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION})
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
-set(CMAKE_CXX_STANDARD 17)  # C++17
+set(CMAKE_CXX_STANDARD 20)  # C++20
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # Обов'язково використовувати цей стандарт
 set(CMAKE_CXX_EXTENSIONS OFF)  # Вимкнути розширення компілятора
 

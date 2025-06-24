@@ -4,13 +4,13 @@
 NavigationNodeManager::NavigationNodeManager()
   :m_nodesCount(1)
 {
-  m_navigationNodes.reserve(2000);
+  m_navigationNodes.resize(2000);
 }
 
 
 NavigationNode& NavigationNodeManager::addNode(NavigationNode&& node)
 {
-  m_navigationNodes.emplace_back(std::move(node));
+  m_navigationNodes[node.id] = std::move(node);
   return m_navigationNodes.back();
 }
 

@@ -3,6 +3,7 @@
 #include "EntityMemoryPool.h"
 #include "Enums.h"
 #include "JoystickEnum.h"
+#include "NavigationNode.h"
 #include "SFML/Graphics/CircleShape.hpp"
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
@@ -22,6 +23,8 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_set>
+#include <vector>
 #include "Weapon.h"
 #include "math.h"
 
@@ -46,6 +49,10 @@
 
 //Mushroom properties
 #define M_PATROL_DISTANCE 100
+#define M_SPEED 1.f;
+
+//EnemyAI System
+#define THRESHOLD_DISTANCE 12.f
 
 void ScenePrologue::init(const std::string sceneConfigPath)
 {
@@ -99,9 +106,7 @@ void ScenePrologue::init(const std::string sceneConfigPath)
   }
 
   lLoader.join();
-  nLoader.join();
-  
-  // loadLevel(sceneConfigPath);
+  nLoader.join();  
 }
 
 std::string getFirstWord(const std::string& str)
@@ -351,12 +356,11 @@ void  ScenePrologue::loadNodeMesh(const std::string sceneConfigPath)
     {
       std::string type;
       float x, y;
-      int id, right, left, down, up;
+      unsigned short id, right, left, down, up;
 
       stream >> type >> x >> y >> id >> right >> left >> down >> up;
 
       Vec2 pos = gridToMidPixel(x, y);
-
       m_navigationManager.addNode(NavigationNode{converToNNT(type), pos, id, right, left, down, up});
     }
     else if(token == "End")
@@ -378,7 +382,6 @@ Vec2  ScenePrologue::gridToMidPixel(float gridX, float gridY)
 
 void ScenePrologue::playerInit(Vec2& pos)
 {
-
   Entity player = m_entityManager.addEntity(Object::Player);
  
   player.addComponent<CTransform>(gridToMidPixel(pos.x, pos.y));
@@ -821,6 +824,23 @@ void ScenePrologue::sMovement()
       CState& cState      = e.getComponent<CState>();
       CAttack& cAttack    = e.getComponent<CAttack>();
       
+      if (cInput.left)
+      {
+        cTransform.vel.x -= M_SPEED;
+        cTransform.scale.x = 1.0f;
+
+        if (cState.onGround)
+          changeAnimation(e, "Mushroom_Run_Anim");
+      }
+      else if (cInput.right)
+      {
+        cTransform.vel.x += M_SPEED;
+        cTransform.scale.x = -1.0f;
+
+        if (cState.onGround && !cState.slide)
+          changeAnimation(e, "Mushroom_Run_Anim");
+      }
+
       // === GRAVITY (only works if we don't climb) ===
       if (gravity.has && !cState.climp)
       {
@@ -847,6 +867,11 @@ void ScenePrologue::sMovement()
 
       // === RESET HORIZONTAL VELOCITY ===
       cTransform.vel.x = 0.0f;
+      
+      // cInput.left = false;
+      // cInput.right = false;
+      // cInput.up = false;
+      // cInput.down = false;
     }
   }
 }
@@ -990,23 +1015,163 @@ void  ScenePrologue::sCollision()
   }
 }
 
-void   ScenePrologue::sEnemyAI()
+
+void ScenePrologue::nodeScane(NavigationNode& node, CEnemyAI&           enemyAI,
+                              std::vector<unsigned short>&              path,
+                              std::unordered_set<unsigned short>&       visited,
+                              std::vector<NavigationNode>&              nodes,
+                              std::vector<std::vector<unsigned short>>& calculatedPathes)
 {
+  std::cerr << std::endl;
+  std::cerr << "Node id: " << node.id; 
+  std::cerr << "  Left: " << node.left << " Right: " << node.right << " Up: " << node.up << " Down: " << node.down <<  " || ";
+  // If  already visited - exit
+  if (visited.count(node.id)) return;
+
+  // Mark as visited
+  visited.insert(node.id);
+
+  // Add to the path
+  path.push_back(node.id);
+
+  // If we find the end, we add the entire path
+  if (node.nodeType == NNType::End && visited.size())
+  {
+    if(visited.size() > 1)
+    {
+      std::cerr << " ^ " ;
+      calculatedPathes.push_back(path);
+      path.pop_back();
+      return;
+    }
+  }
+  // Depth-first neighbor search
+  
+  if (node.left != 0)
+  {
+    std::cerr << "selected left " << nodes[node.left].id << std::endl;
+    nodeScane(nodes[node.left], enemyAI, path, visited, nodes, calculatedPathes);
+  }
+  if (node.up != 0)
+  {
+    std::cerr << "selected up " << nodes[node.up].id << std::endl;
+    nodeScane(nodes[node.up], enemyAI, path, visited, nodes, calculatedPathes);
+  }
+  if (node.right != 0)
+  {
+    std::cerr << "selected right " << nodes[node.right].id << std::endl;
+    nodeScane(nodes[node.right], enemyAI, path, visited, nodes, calculatedPathes);
+  }
+  if (node.down != 0)
+  {
+    std::cerr << "selected down " << nodes[node.down].id << std::endl;;
+    nodeScane(nodes[node.down], enemyAI, path, visited, nodes, calculatedPathes);
+  }
+
+  // We are going back along the path
+  path.pop_back();
+}
+
+
+void ScenePrologue::sEnemyAI()
+{
+  std::vector<NavigationNode>& nodes = m_navigationManager.getNodes();
   for (Entity& e : m_entityManager.getEntities())
   {
-    if(!e.getComponent<CEnemyAI>().has) continue;
+    if (!e.getComponent<CEnemyAI>().has) continue;
 
     CEnemyAI& enemyAI = e.getComponent<CEnemyAI>();
-    
-    if(enemyAI.enemyState == EnemyState::Patrol)
-    {
-      for (NavigationNode& n : m_navigationManager.getNodes())
-      {
-        if(!Collision::NNodeCollision(e, n)) continue;
+    CInput& eInput = e.getComponent<CInput>();
 
-         
-      } 
+    if (enemyAI.enemyState == EnemyState::Patrol)
+    {
+      for (NavigationNode& n : nodes)
+      {
+        if (!Collision::NNodeCollision(e, n)) continue;
+
+        if (!enemyAI.hawePath)
+        {
+          std::vector<std::vector<unsigned short>> calculatedPathes;
+          std::unordered_set<unsigned short> visited;
+          std::vector<unsigned short> path;
+          nodeScane(n, enemyAI, path, visited, nodes, calculatedPathes);
+
+          if (calculatedPathes.empty()) continue;
+          
+          for (int i = 0; i < calculatedPathes.size(); ++i)
+          {
+            std::cerr << std::endl;
+            std::cerr << "Path: ";
+            for (auto& e : calculatedPathes[i])
+            {
+              std::cerr << " " <<  e;
+            } 
+          }
+          std::cerr << std::endl;
+          
+          for(int i = 0; i< (calculatedPathes.size() > 1 ? calculatedPathes.size()-1 : calculatedPathes.size()); ++i)
+          {
+            std::cerr << "Size: " << calculatedPathes.size() << std::endl;
+            if(calculatedPathes.size() > 1)
+            {
+              if(calculatedPathes[i].size() < calculatedPathes[i+1].size())
+                enemyAI.path = calculatedPathes[i+1];
+              else
+                enemyAI.path = calculatedPathes[i];
+            }
+            else
+              enemyAI.path = calculatedPathes[0];
+
+          }
+          enemyAI.hawePath = true;
+          
+           std::cerr << "Valid path: ";
+          for(auto& e : enemyAI.path)
+          {
+            std::cerr << " " << e;
+          }
+          std::cerr << std::endl;
+
+          break;
+        }
+
+        if(enemyAI.hawePath)
+        {
+          
+        if(enemyAI.curentIndexInPath >= enemyAI.path.size())
+        {
+          enemyAI.curentIndexInPath = 0;
+          enemyAI.hawePath = false;           
+          return;
+        }
+
+        unsigned short  targetNodeId = enemyAI.path[enemyAI.curentIndexInPath];
+        NavigationNode& targetNode  = nodes[targetNodeId];
+        CTransform&     enemyT =  e.getComponent<CTransform>();
+        
+        float distance = targetNode.pos.distance(enemyT.pos);
+
+        if(distance < THRESHOLD_DISTANCE)
+        {
+          std::cerr << "Curent index path: " << enemyAI.curentIndexInPath << std::endl;
+          enemyAI.curentIndexInPath++;
+          eInput.left = eInput.right = eInput.up = eInput.down = false;
+          return;
+        }
+
+
+        if(targetNode.pos.x < enemyT.pos.x)
+        {
+          eInput.left = true;
+        }
+        else if(targetNode.pos.x > enemyT.pos.x)
+        {
+          eInput.right = true;
+        }
+
+
+        }
+      }
     }
-     
-  } 
+  }
 }

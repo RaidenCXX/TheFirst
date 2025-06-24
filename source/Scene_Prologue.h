@@ -1,6 +1,7 @@
 #pragma once
 #include "Entity.h"
 #include "GameEngine.h"
+#include "NavigationNode.h"
 #include "NavigationNodeManager.h"
 #include "SFML/Graphics/Text.hpp"
 #include "SFML/Graphics/View.hpp"
@@ -9,12 +10,11 @@
 #include "Vec2.h"
 #include <mutex>
 #include <vector>
-#include <thread>
 #include <condition_variable>
-
 
 class ScenePrologue : public Scene 
 {
+ 
   std::string levelPath;
   
   sf::View                      m_view;
@@ -31,12 +31,18 @@ class ScenePrologue : public Scene
   
 
   
-  void                playerInit(Vec2& pos);
-  void                loadLevel(const std::string sceneConfigPath);
-  void                loadNodeMesh(const std::string sceneConfigPath);
-  Vec2                gridToMidPixel(float gridX, float gridY);
-  void                renderBoundingBox(bool active);
-  void                changeAnimation(Entity& entity, std::string&& animationName, bool repeat = true);
+  void    playerInit(Vec2& pos);
+  void    loadLevel(const std::string sceneConfigPath);
+  void    loadNodeMesh(const std::string sceneConfigPath);
+  Vec2    gridToMidPixel(float gridX, float gridY);
+  void    renderBoundingBox(bool active);
+  void    changeAnimation(Entity& entity, std::string&& animationName, bool repeat = true);
+  void    nodeScane(NavigationNode& node, CEnemyAI& enemyAI,
+                    std::vector<unsigned short>& path,
+                    std::unordered_set<unsigned short>&  visited,
+                    std::vector<NavigationNode>& nodes,
+                    std::vector<std::vector<unsigned short>>& calculatedPathes);
+
 public:
 
   ScenePrologue(GameEngine* gameEngine);

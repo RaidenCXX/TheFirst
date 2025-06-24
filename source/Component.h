@@ -3,10 +3,15 @@
 #include "SFML/System/Time.hpp"
 #include "Vec2.h"
 #include "Weapon.h"
+#include <unordered_set>
 #include <vector>
 #include "Enums.h"
 
 #define INVENTORY_SIZE 5
+
+//CEnemyAI
+#define NUMBERS_PATHS 5
+#define LENGHT_PATH   40
 
 class Component
 {
@@ -171,13 +176,15 @@ public:
 class CEnemyAI :public Component
 {
 public:
-  float                       patrolDistance;
-  EnemyState                  enemyState;
-  std::vector<unsigned short> path;
-  unsigned int                curentPathIndex;
+  float                                     patrolDistance = 0.0f;
+  EnemyState                                enemyState = EnemyState::None;              
+  std::vector<unsigned short>               path;
+  unsigned short                            curentIndexInPath = 0;
+  bool                                      hawePath = false;
 
 
   CEnemyAI() :patrolDistance(0), enemyState(EnemyState::None) {}
   CEnemyAI(EnemyState enemyState, float patrolDistance)
-    :patrolDistance(patrolDistance), enemyState(enemyState) {}
+    :Component(true), patrolDistance(patrolDistance), enemyState(enemyState), hawePath(false)
+  {}
 };
