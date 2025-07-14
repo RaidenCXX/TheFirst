@@ -3,7 +3,6 @@
 #include "SFML/System/Time.hpp"
 #include "Vec2.h"
 #include "Weapon.h"
-#include <unordered_set>
 #include <vector>
 #include "Enums.h"
 
@@ -179,12 +178,13 @@ public:
   float                                     patrolDistance = 0.0f;
   EnemyState                                enemyState = EnemyState::None;              
   std::vector<unsigned short>               path;
-  unsigned short                            curentIndexInPath = 0;
+  static unsigned short                     collidedPlayerNodeId; 
   bool                                      hawePath = false;
 
 
   CEnemyAI() :patrolDistance(0), enemyState(EnemyState::None) {}
   CEnemyAI(EnemyState enemyState, float patrolDistance)
-    :Component(true), patrolDistance(patrolDistance), enemyState(enemyState), hawePath(false)
+    :Component(true), patrolDistance(patrolDistance), enemyState(enemyState),
+     hawePath(false)
   {}
 };

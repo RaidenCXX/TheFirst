@@ -84,6 +84,16 @@ bool Vec2::operator==(const Vec2& vec2)
 	return (this->x == vec2.x) && (this->y == vec2.y);
 }
 
+bool Vec2::operator==(const float value)
+{
+  return this->x == value && this->y == value;
+}
+
+bool Vec2::operator!=(const float value)
+{
+  return this->x != value && this->y != value;
+}
+
 Vec2& Vec2::operator=(const Vec2& vec2)
 {
   x = vec2.x;
@@ -131,4 +141,14 @@ Vec2& Vec2::clamp(float min, float max)
 		y = max;
 	}
 	return *this;
+}
+
+float Vec2::cross(Vec2& vec2)
+{
+  return this->x * vec2.y - this->y * vec2.x;
+}
+
+float Vec2::dot(Vec2& vec2)
+{
+  return this->x * vec2.x + this->y * vec2.y; 
 }

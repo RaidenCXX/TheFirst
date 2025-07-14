@@ -11,7 +11,7 @@
 #include <mutex>
 #include <vector>
 #include <condition_variable>
-
+#include <unordered_set>
 class ScenePrologue : public Scene 
 {
  

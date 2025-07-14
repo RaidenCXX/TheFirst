@@ -1,6 +1,6 @@
 Player      1     28    IdleAnim                    1
 
-Mushroom    60    20    Mushroom_Idle_Anim          1
+Mushroom    60    18    Mushroom_Idle_Anim          1
 
 
 GrassTile
@@ -30,7 +30,6 @@ TileBbox    23      30    GrassTile2_Static         0
 TileBbox    24      30    GrassTile2_Static         0
 TileBbox    25      30    GrassTile2_Static         0
 TileBbox    26      30    GrassTile2_Static         0
-SlideRBbox  27      25    GrassTileTS_Static        0
 TileBbox    27      30    GrassTile2_Static         0
 TileBbox    28      30    GrassTile2_Static         0
 TileBbox    29      30    GrassTile2_Static         0

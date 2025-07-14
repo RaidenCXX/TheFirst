@@ -5,6 +5,7 @@
 #include "NavigationNode.h"
 #include "Vec2.h"
 #include <cmath>
+#include <iostream>
 
 
 [[nodiscard]] Vec2 Collision::getOverlap(Entity& entityA, Entity& entityB)
@@ -31,15 +32,24 @@
   return overlap;
 }
 
-[[nodiscard]] Vec2 Collision::getOverlap(Entity& entity, NavigationNode& NNode)
+[[nodiscard]] Vec2 Collision::getOverlap(Entity& entity,const NavigationNode& NNode)
 {
   constexpr float epsilon = 0.001f;
 
   CBoundingBox& bboxA       = entity.getComponent<CBoundingBox>();
   CTransform&   transformA  = entity.getComponent<CTransform>();
 
-  float oX = (bboxA.halfSize.x + NNode.size / 2) - std::fabsf(transformA.pos.x - NNode.pos.x);
-  float oY = (bboxA.halfSize.y + NNode.size / 2) - std::fabsf(transformA.pos.y - NNode.pos.y);
+  // if(entity.getComponent<CTag>().tag == Object::Player)
+  // {
+  //   std::cout << "bboxA.halfSize.x: " << bboxA.halfSize.x << std::endl;
+  //   std::cout << "NNode.size: " << NNode.size << std::endl;
+  //   std::cout << "transformA.pos.x: " << transformA.pos.x << std::endl;
+  //   std::cout << "NNode.pos.x: " << NNode.pos.x << std::endl;
+  // }
+
+  float oX = (bboxA.halfSize.x + NNode.size / 2) - std::fabs(transformA.pos.x - NNode.pos.x);
+  float oY = (bboxA.halfSize.y + NNode.size / 2) - std::fabs(transformA.pos.y - NNode.pos.y);
+
 
   Vec2 overlap{0, 0};
 
@@ -251,16 +261,32 @@ void Collision::resolveCollision(Entity& entityA, Entity& entityB)
   }
 }
 
-bool Collision::NNodeCollision(Entity& entity, NavigationNode& NNode)
+unsigned short Collision::NNodeCollision(Entity& entity, NavigationNode& NNode)
 {
   Vec2 overlap = getOverlap(entity, NNode);
   if (overlap.x == 0 || overlap.y == 0)
-    return false;
+    return 0;
+  
+  return NNode.id;
+}
 
-  return true;
 
-  // CTransform& transformA = entity.getComponent<CTransform>();
-  // CTag& tagA = entity.getComponent<CTag>();
-  //
-  // Vec2 prevOverlap = getPreviousOverlap(entity, NNode);
+
+Vec2 Collision::lineIntersect(Vec2 A, Vec2 B, Vec2 C, Vec2 D)
+{
+  Vec2 intersectP{0,0};
+  Vec2 R = B-A;
+  Vec2 S = D-C;
+  float RxS = R.cross(S);
+  if(RxS == 0.0f) return intersectP;
+  Vec2 CmA = C-A;
+  float t = CmA.cross(S)/RxS;
+  float u = CmA.cross(R) / RxS;
+
+  if(t >= 0 && t <= 1 && u >= 0 && u <= 1)
+  {
+    intersectP.x = A.x + t * R.x;
+    intersectP.y = A.y + t * R.y;
+  }
+  return intersectP; 
 }

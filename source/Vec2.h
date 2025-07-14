@@ -29,12 +29,15 @@ public:
 	Vec2& operator-=(const Vec2& vec2);
 
 	bool operator==(const Vec2& vec2);
+	bool operator==(const float value);
+	bool operator!=(const float value);
   Vec2& operator=(const Vec2& vec2);
 
 	float lenght() const;
 	float distance(Vec2 vec2) const;
   Vec2& normalize();
-  
+  float cross(Vec2& vec2);
+  float dot(Vec2& vec2);
 
 	Vec2& clamp(float min, float max);
 };

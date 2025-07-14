@@ -16,7 +16,9 @@
 #include "Action.h"
 #include "Vec2.h"
 #include "Collision.h"
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <condition_variable>
 #include <fstream>
 #include <iostream>
@@ -49,10 +51,27 @@
 
 //Mushroom properties
 #define M_PATROL_DISTANCE 100
-#define M_SPEED 1.f;
+#define M_SPEED 1.f
+#define M_VIEW_DISTANCE 216.f 
+#define M_FOV 0.5f
+#define M_FOLLOW_DISTANCE 32.f
 
 //EnemyAI System
 #define THRESHOLD_DISTANCE 12.f
+
+void  ScenePrologue::update(sf::Time deltaTime)
+{
+  sEnemyAI();
+  sMovement();
+  sAttack(deltaTime);
+  sCollision();
+}
+
+void ScenePrologue::render(sf::Time deltaTime)
+{
+  sAnimation(deltaTime);
+  sRender();
+}
 
 void ScenePrologue::init(const std::string sceneConfigPath)
 {
@@ -186,15 +205,16 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       Entity e = m_entityManager.addEntity(Object::Mushroom);
       
       e.addComponent<CTransform>(newPos);
-      CTransform& tx = e.getComponent<CTransform>();
-      tx.prevPos = e.getComponent<CTransform>().pos;
-      tx.scale = Vec2{1.0f, 1.0f};
+      CTransform& tr = e.getComponent<CTransform>();
+      tr.prevPos = e.getComponent<CTransform>().pos;
+      tr.scale = Vec2{1.0f, 1.0f};
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x, e.getComponent<CAnimation>().animation.getSize().y);
       e.addComponent<CGravity>(GRAVITY, MAX_SPEED_FALL, JUMP_VElOCITY, FALL_MULTIPLIER);
       e.addComponent<CState>();
       e.addComponent<CEnemyAI>(EnemyState::Patrol, M_PATROL_DISTANCE);
+      std::cout << "Mushroom added " << tr.pos.x << " " << tr.pos.y << std::endl;
     }
     else if(convertToEnum(token) == Object::TileBbox)
     {
@@ -403,19 +423,6 @@ ScenePrologue::ScenePrologue(GameEngine* gameEngine)
 }
 
 
-void  ScenePrologue::update(sf::Time deltaTime)
-{
-  sEnemyAI();
-  sMovement();
-  sAttack(deltaTime);
-  sCollision();
-}
-
-void ScenePrologue::render(sf::Time deltaTime)
-{
-  sAnimation(deltaTime);
-  sRender();
-}
 
 void  ScenePrologue::sRender()
 {
@@ -840,7 +847,11 @@ void ScenePrologue::sMovement()
         if (cState.onGround && !cState.slide)
           changeAnimation(e, "Mushroom_Run_Anim");
       }
-
+      else if (!cInput.left && !cInput.right)
+      {
+        if (cState.onGround)
+          changeAnimation(e, "Mushroom_Idle_Anim"); 
+      }
       // === GRAVITY (only works if we don't climb) ===
       if (gravity.has && !cState.climp)
       {
@@ -860,6 +871,7 @@ void ScenePrologue::sMovement()
           cTransform.vel.y = gravity.maxSpeedFall;
         }
       }
+
 
       // === VELOCITY UPDATE ===
       cTransform.prevPos = cTransform.pos;
@@ -1022,9 +1034,6 @@ void ScenePrologue::nodeScane(NavigationNode& node, CEnemyAI&           enemyAI,
                               std::vector<NavigationNode>&              nodes,
                               std::vector<std::vector<unsigned short>>& calculatedPathes)
 {
-  std::cerr << std::endl;
-  std::cerr << "Node id: " << node.id; 
-  std::cerr << "  Left: " << node.left << " Right: " << node.right << " Up: " << node.up << " Down: " << node.down <<  " || ";
   // If  already visited - exit
   if (visited.count(node.id)) return;
 
@@ -1039,7 +1048,6 @@ void ScenePrologue::nodeScane(NavigationNode& node, CEnemyAI&           enemyAI,
   {
     if(visited.size() > 1)
     {
-      std::cerr << " ^ " ;
       calculatedPathes.push_back(path);
       path.pop_back();
       return;
@@ -1048,47 +1056,115 @@ void ScenePrologue::nodeScane(NavigationNode& node, CEnemyAI&           enemyAI,
   // Depth-first neighbor search
   
   if (node.left != 0)
-  {
-    std::cerr << "selected left " << nodes[node.left].id << std::endl;
     nodeScane(nodes[node.left], enemyAI, path, visited, nodes, calculatedPathes);
-  }
   if (node.up != 0)
-  {
-    std::cerr << "selected up " << nodes[node.up].id << std::endl;
     nodeScane(nodes[node.up], enemyAI, path, visited, nodes, calculatedPathes);
-  }
   if (node.right != 0)
-  {
-    std::cerr << "selected right " << nodes[node.right].id << std::endl;
     nodeScane(nodes[node.right], enemyAI, path, visited, nodes, calculatedPathes);
-  }
   if (node.down != 0)
-  {
-    std::cerr << "selected down " << nodes[node.down].id << std::endl;;
     nodeScane(nodes[node.down], enemyAI, path, visited, nodes, calculatedPathes);
-  }
 
   // We are going back along the path
   path.pop_back();
 }
 
+bool playerVisibility(Entity& entityA, Entity& entityB, std::vector<Entity> allEntity)
+{
+  Vec2 playerPos = entityA.getComponent<CTransform>().pos; 
+  Vec2 enemyPos  = entityB.getComponent<CTransform>().pos;
+
+  //If the player is too far away
+  Vec2 dist = enemyPos - playerPos;
+  if(dist.lenght() >= M_VIEW_DISTANCE) return false;
+
+  //If the gaze is not directed towards the player
+  Vec2 enemyViewDir {entityB.getComponent<CTransform>().scale.x, 0.f};
+  if(enemyViewDir.dot(dist.normalize()) < M_FOV) return false;
+
+  //Is there no visual barrier in front of the enemy?
+  for (Entity& e : allEntity)
+  {
+    if(!e.getComponent<CActive>().active) continue;
+
+    CTag& tag = e.getComponent<CTag>();
+    if(!(tag.tag == Object::TileBbox ||
+       tag.tag == Object::SlideRBbox ||
+       tag.tag == Object::SlideLBbox)) continue;
+
+    Vec2 pos = e.getComponent<CTransform>().pos;
+    Vec2 hSize = e.getComponent<CBoundingBox>().halfSize;
+
+    
+    //Comparing with 4 sides of BoundingBox
+    
+    if(Collision::lineIntersect(playerPos, enemyPos, pos + hSize,
+                                Vec2{pos.x + hSize.x, pos.y - hSize.y}) != 0.f)
+      return false;
+    if(Collision::lineIntersect(playerPos, enemyPos, pos - hSize,
+                                Vec2{pos.x - hSize.x, pos.y + hSize.y}) != 0.f)
+      return false;
+    if(Collision::lineIntersect(playerPos, enemyPos, pos - hSize,
+                                Vec2{pos.x + hSize.x, pos.y - hSize.y}) != 0.f)
+      return false;
+    if(Collision::lineIntersect(playerPos, enemyPos, pos + hSize,
+                                Vec2{pos.x - hSize.x, pos.y + hSize.y}) != 0.f)
+      return false;
+  }
+  return true;
+}
 
 void ScenePrologue::sEnemyAI()
 {
+  static EnemyState prevState = EnemyState::None;
   std::vector<NavigationNode>& nodes = m_navigationManager.getNodes();
+  Entity& player = m_entityManager.getEntities()[m_entityManager.getPlayerIndex()];
+  CTransform& playerTr = player.getComponent<CTransform>();
   for (Entity& e : m_entityManager.getEntities())
   {
     if (!e.getComponent<CEnemyAI>().has) continue;
-
+    
     CEnemyAI& enemyAI = e.getComponent<CEnemyAI>();
     CInput& eInput = e.getComponent<CInput>();
+    CTransform& eTr = e.getComponent<CTransform>(); 
+    
+    //Vision of the enemy section
+    if(playerVisibility(player, e, m_entityManager.getEntities()))
+      enemyAI.enemyState = EnemyState::Attack;
+    else
+    {
+      float xDistance = eTr.pos.x - playerTr.pos.x; 
+      if(enemyAI.enemyState == EnemyState::Attack && std::fabs(xDistance) < M_FOLLOW_DISTANCE )
+      {
+        //red Critical section start
+        if (xDistance < 0.f)
+        {
+          eTr.scale.x = -1;
+        }
+        else if (xDistance > 0.f)
+        {
+          eTr.scale.x = 1;
+        }
+        //red Critical section end
+        enemyAI.enemyState = EnemyState::Attack;
+        enemyAI.hawePath = false;
+      }
+      else
+        enemyAI.enemyState = EnemyState::Patrol;
+    }
+    //Vision of the enemy section End
 
     if (enemyAI.enemyState == EnemyState::Patrol)
     {
+      if(prevState != EnemyState::Patrol)
+      {
+       std::cout << "Patrol" << std::endl;
+      }
+      prevState = EnemyState::Patrol;
       for (NavigationNode& n : nodes)
       {
-        if (!Collision::NNodeCollision(e, n)) continue;
+        if(!n.active) continue;
 
+        if (Collision::NNodeCollision(e, n) == 0) continue;
         if (!enemyAI.hawePath)
         {
           std::vector<std::vector<unsigned short>> calculatedPathes;
@@ -1098,20 +1174,8 @@ void ScenePrologue::sEnemyAI()
 
           if (calculatedPathes.empty()) continue;
           
-          for (int i = 0; i < calculatedPathes.size(); ++i)
+          for(size_t i = 0; i< (calculatedPathes.size() > 1 ? calculatedPathes.size()-1 : calculatedPathes.size()); ++i)
           {
-            std::cerr << std::endl;
-            std::cerr << "Path: ";
-            for (auto& e : calculatedPathes[i])
-            {
-              std::cerr << " " <<  e;
-            } 
-          }
-          std::cerr << std::endl;
-          
-          for(int i = 0; i< (calculatedPathes.size() > 1 ? calculatedPathes.size()-1 : calculatedPathes.size()); ++i)
-          {
-            std::cerr << "Size: " << calculatedPathes.size() << std::endl;
             if(calculatedPathes.size() > 1)
             {
               if(calculatedPathes[i].size() < calculatedPathes[i+1].size())
@@ -1121,55 +1185,129 @@ void ScenePrologue::sEnemyAI()
             }
             else
               enemyAI.path = calculatedPathes[0];
-
           }
+          std::reverse(enemyAI.path.begin(), enemyAI.path.end());
           enemyAI.hawePath = true;
-          
-           std::cerr << "Valid path: ";
-          for(auto& e : enemyAI.path)
-          {
-            std::cerr << " " << e;
-          }
-          std::cerr << std::endl;
-
           break;
         }
 
         if(enemyAI.hawePath)
-        {
+        { 
+          if(enemyAI.path.empty())
+          {
+            enemyAI.hawePath = false;           
+            return;
+          }
+
+          unsigned short  targetNodeId = enemyAI.path[enemyAI.path.size()-1];
+          NavigationNode& targetNode  = nodes[targetNodeId];
+          CTransform&     enemyT =  e.getComponent<CTransform>();
           
-        if(enemyAI.curentIndexInPath >= enemyAI.path.size())
-        {
-          enemyAI.curentIndexInPath = 0;
-          enemyAI.hawePath = false;           
-          return;
-        }
+          float distance = targetNode.pos.distance(enemyT.pos);
 
-        unsigned short  targetNodeId = enemyAI.path[enemyAI.curentIndexInPath];
-        NavigationNode& targetNode  = nodes[targetNodeId];
-        CTransform&     enemyT =  e.getComponent<CTransform>();
+          if(distance < THRESHOLD_DISTANCE)
+          {
+            std::cerr << "Curent index path: " << enemyAI.path.size() << std::endl;
+            enemyAI.path.pop_back();
+            eInput.left = eInput.right = eInput.up = eInput.down = false;
+            return;
+          }
+
+          if(targetNode.pos.x < enemyT.pos.x)
+          {
+            eInput.left = true;
+          }
+          else if(targetNode.pos.x > enemyT.pos.x)
+          {
+            eInput.right = true;
+          }
+        }
+      }
+    }
+    else if(enemyAI.enemyState == EnemyState::Attack)
+    {
+      prevState = EnemyState::Attack;
+
+      for (NavigationNode& n : nodes)
+      {
+        if(!n.active) continue;
+
+        unsigned short collidedPlayerNodeId = Collision::NNodeCollision(player, n);
+        if(collidedPlayerNodeId == 0) continue;
+
+        enemyAI.collidedPlayerNodeId = collidedPlayerNodeId;
         
-        float distance = targetNode.pos.distance(enemyT.pos);
-
-        if(distance < THRESHOLD_DISTANCE)
+        if (!enemyAI.hawePath)
         {
-          std::cerr << "Curent index path: " << enemyAI.curentIndexInPath << std::endl;
-          enemyAI.curentIndexInPath++;
-          eInput.left = eInput.right = eInput.up = eInput.down = false;
-          return;
+          std::vector<std::vector<unsigned short>> calculatedPathes;
+          std::unordered_set<unsigned short> visited;
+          std::vector<unsigned short> path;
+          nodeScane(n, enemyAI, path, visited, nodes, calculatedPathes);
+
+          if (calculatedPathes.empty()) continue;
+         
+          //Clculated path from enemy to player
+          for (size_t i = 0; i < calculatedPathes.size(); ++i)
+          {
+            const auto& it = std::find(calculatedPathes[i].begin(), calculatedPathes[i].end(), enemyAI.collidedPlayerNodeId);
+            if(it == calculatedPathes[i].end()) continue;
+
+            enemyAI.path = calculatedPathes[i];
+            break;
+          }
+          
+          if(enemyAI.path.empty()) continue;
+         
+          const auto& it = std::find(enemyAI.path.begin(), enemyAI.path.end(), enemyAI.collidedPlayerNodeId);
+          if(it == enemyAI.path.end()) continue;
+
+          enemyAI.path.erase(it+1, enemyAI.path.end());
+          
+          std::cout << "New Attack path: "; 
+          for (auto i : enemyAI.path)
+          {
+            std::cout << " " << i;
+          }
+          std::cout << std::endl;
+
+          std::reverse(enemyAI.path.begin(), path.end());
+          enemyAI.hawePath = true;
+          break;
         }
-
-
-        if(targetNode.pos.x < enemyT.pos.x)
+        else if (enemyAI.hawePath)
         {
-          eInput.left = true;
-        }
-        else if(targetNode.pos.x > enemyT.pos.x)
-        {
-          eInput.right = true;
-        }
+          if(enemyAI.path.empty())
+          {
+            enemyAI.hawePath = false;           
+            return;
+          }
 
+          unsigned short  targetNodeId = enemyAI.path[enemyAI.path.size()-1];
+          Vec2& targetNode  = nodes[targetNodeId].pos;
+          CTransform&     enemyT =  e.getComponent<CTransform>();
+          
+          float distance = targetNode.distance(enemyT.pos);
 
+          if(distance < THRESHOLD_DISTANCE)
+          {
+            enemyAI.path.pop_back();
+            eInput.left = eInput.right = eInput.up = eInput.down = false;
+            return;
+          }
+          else if(enemyAI.path.size() == 1)
+          {
+            targetNode = player.getComponent<CTransform>().pos;
+            eInput.left = eInput.right = eInput.up = eInput.down = false;
+          }
+
+          if(targetNode.x < enemyT.pos.x)
+          {
+            eInput.left = true;
+          }
+          else if(targetNode.x > enemyT.pos.x)
+          { 
+            eInput.right = true;
+          } 
         }
       }
     }
