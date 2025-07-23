@@ -177,6 +177,7 @@ class CEnemyAI :public Component
 public:
   float                                     patrolDistance = 0.0f;
   EnemyState                                enemyState = EnemyState::None;              
+  EnemyState                                prevEnemyState = EnemyState::None;              
   std::vector<unsigned short>               path;
   static unsigned short                     collidedPlayerNodeId; 
   bool                                      hawePath = false;
@@ -187,4 +188,14 @@ public:
     :Component(true), patrolDistance(patrolDistance), enemyState(enemyState),
      hawePath(false)
   {}
+};
+
+class CHp :public Component
+{
+public:
+  unsigned short healthPoints;
+  
+  CHp() :healthPoints(0) {}
+  CHp(unsigned short healthPoints)
+    :Component(true), healthPoints(healthPoints) {}
 };

@@ -14,6 +14,7 @@ EntityMemoryPool::EntityMemoryPool(size_t maxEntities)
   std::get<8>(m_pool).resize(maxEntities);  //CAttack 
   std::get<9>(m_pool).resize(maxEntities);  //CWeapon
   std::get<10>(m_pool).resize(maxEntities); //CEnemyAI
+  std::get<11>(m_pool).resize(maxEntities); //CHp
 }
 
 

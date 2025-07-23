@@ -13,7 +13,7 @@ using EntityComponentVectorTuple = std::tuple<std::vector<CTransform>,
   std::vector<CAnimation>,std::vector<CActive>, std::vector<CTag>,
   std::vector<CInput>, std::vector<CGravity>,std::vector<CBoundingBox>,
   std::vector<CState>, std::vector<CAttack>, std::vector<CWeapon>,
-  std::vector<CEnemyAI>>;
+  std::vector<CEnemyAI>, std::vector<CHp>>;
 
 class EntityMemoryPool
 {

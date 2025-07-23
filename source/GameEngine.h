@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <random>
 #include <string>
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "Assets.h"
@@ -49,6 +50,7 @@ class GameEngine
   private:
 	sf::RenderWindow          m_window;
   sf::Clock                 m_clock;
+  std::mt19937              m_randomGenerator;
 	Assets                    m_assets;
   JoystickPos               m_joystickPos;
   ConfigScenePath           m_sceneConfig;
@@ -77,5 +79,6 @@ class GameEngine
   const   std::string&  getPathToScene(const std::string& sceneName);
           Assets&       getAssets();
   sf::RenderWindow&     getWindow();
+  std::mt19937&         getRandGen();
   
 };

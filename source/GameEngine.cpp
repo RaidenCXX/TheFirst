@@ -388,3 +388,7 @@ sf::RenderWindow& GameEngine::getWindow()
 {
   return m_window;
 }
+std::mt19937&     GameEngine::getRandGen()
+{
+  return m_randomGenerator;
+}

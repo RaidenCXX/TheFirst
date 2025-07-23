@@ -28,4 +28,5 @@ class Assets
   const sf::Texture&  getTexture(const std::string& textureName)     const;
   Animation&          getAnimation(const std::string& animationName) ;
   const sf::Font&     getFont(const std::string& fontName)           const;
+  const sf::Font&     getFont()  const;
 };

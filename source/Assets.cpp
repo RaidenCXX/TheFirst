@@ -129,3 +129,13 @@ const sf::Font&  Assets::getFont(const std::string& fontName)  const
   }
   throw std::runtime_error{"Font not found: "+fontName};
 }
+
+const sf::Font&  Assets::getFont()  const
+{
+  auto it = m_fontMap.find("Default");
+  if(it != m_fontMap.end())
+  {
+    return m_fontMap.at("Default");
+  }
+  throw std::runtime_error{"Font not found: Default"};
+}

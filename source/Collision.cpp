@@ -32,7 +32,7 @@
   return overlap;
 }
 
-[[nodiscard]] Vec2 Collision::getOverlap(Entity& entity,const NavigationNode& NNode)
+[[nodiscard]] Vec2 Collision::getOverlap(Entity& entity, const NavigationNode& NNode)
 {
   constexpr float epsilon = 0.001f;
 
@@ -41,11 +41,17 @@
 
   // if(entity.getComponent<CTag>().tag == Object::Player)
   // {
+  //   std::cout << "Player log start\n";
   //   std::cout << "bboxA.halfSize.x: " << bboxA.halfSize.x << std::endl;
-  //   std::cout << "NNode.size: " << NNode.size << std::endl;
-  //   std::cout << "transformA.pos.x: " << transformA.pos.x << std::endl;
-  //   std::cout << "NNode.pos.x: " << NNode.pos.x << std::endl;
+  //   std::cout << "transformA.pos.x: " << transformA.pos.x << "pos.y: "<< transformA.pos.y << std::endl;
+  //   std::cout << "Player log end\n";
   // }
+  //
+  //   std::cout << "Node log start\n";
+  //   std::cout << "NNode.size: " << NNode.size << std::endl;
+  //   std::cout << "NNode.pos.x: " << NNode.pos.x << " pos.y" << NNode.pos.y << std::endl;
+  //   std::cout << "Node log end\n";
+
 
   float oX = (bboxA.halfSize.x + NNode.size / 2) - std::fabs(transformA.pos.x - NNode.pos.x);
   float oY = (bboxA.halfSize.y + NNode.size / 2) - std::fabs(transformA.pos.y - NNode.pos.y);

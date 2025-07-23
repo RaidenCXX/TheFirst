@@ -28,7 +28,6 @@ class ScenePrologue : public Scene
   std::condition_variable       m_cv;
   std::mutex                    m_loaderMutex;
   size_t                        m_activeThreadCount = 0;
-  
 
   
   void    playerInit(Vec2& pos);

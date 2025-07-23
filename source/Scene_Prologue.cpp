@@ -8,6 +8,7 @@
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/Sprite.hpp"
+#include "SFML/Graphics/Text.hpp"
 #include "SFML/System/Time.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Keyboard.hpp"
@@ -18,11 +19,12 @@
 #include "Collision.h"
 #include <algorithm>
 #include <chrono>
-#include <cmath>
 #include <condition_variable>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <random>
 #include <string>
 #include <thread>
 #include <unordered_set>
@@ -42,6 +44,7 @@
 #define SPEED 5.f
 #define SPEED_VERTICAL 1.f
 #define SLIDE_SPEED 4.0f
+#define PLAYER_HP 200
 
 //AnimationDepthLayer
 #define MAX_DEPTH_LAYER 8
@@ -51,13 +54,13 @@
 
 //Mushroom properties
 #define M_PATROL_DISTANCE 100
-#define M_SPEED 1.f
+#define M_SPEED 1.5f
 #define M_VIEW_DISTANCE 216.f 
 #define M_FOV 0.5f
 #define M_FOLLOW_DISTANCE 32.f
-
+#define M_HP 100
 //EnemyAI System
-#define THRESHOLD_DISTANCE 12.f
+#define THRESHOLD_DISTANCE 32.f
 
 void  ScenePrologue::update(sf::Time deltaTime)
 {
@@ -85,7 +88,9 @@ void ScenePrologue::init(const std::string sceneConfigPath)
   registerAction(static_cast<int>(sf::Keyboard::Key::Right),  "Right");
   registerAction(static_cast<int>(sf::Keyboard::Key::D),      "Right");
   registerAction(static_cast<int>(sf::Keyboard::Key::Space),  "Jump");
-
+  registerAction(static_cast<int>(sf::Keyboard::Key::J),      "Attack");
+  registerAction(static_cast<int>(sf::Keyboard::Key::K),      "Shoot");
+  
   registerAction(static_cast<int>(sf::Keyboard::Key::B),       "Bound");
 
   //Joystick
@@ -214,6 +219,9 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       e.addComponent<CGravity>(GRAVITY, MAX_SPEED_FALL, JUMP_VElOCITY, FALL_MULTIPLIER);
       e.addComponent<CState>();
       e.addComponent<CEnemyAI>(EnemyState::Patrol, M_PATROL_DISTANCE);
+      e.addComponent<CWeapon>(Weapon{"Mushroom_Head", sf::seconds(2.3f), 1});
+      e.addComponent<CAttack>();
+      e.addComponent<CHp>(M_HP);
       std::cout << "Mushroom added " << tr.pos.x << " " << tr.pos.y << std::endl;
     }
     else if(convertToEnum(token) == Object::TileBbox)
@@ -413,6 +421,7 @@ void ScenePrologue::playerInit(Vec2& pos)
   player.addComponent<CGravity>(GRAVITY, MAX_SPEED_FALL, JUMP_VElOCITY, FALL_MULTIPLIER);
   player.addComponent<CState>(true);
   player.addComponent<CWeapon>(Weapon{"Sword", sf::seconds(0.5f), 3});
+  player.addComponent<CHp>(PLAYER_HP);
 }
 
 
@@ -578,15 +587,21 @@ void ScenePrologue::renderBoundingBox(bool active)
       }
     }
     //NavigationNode display
-    
+   
+    sf::Text t(m_gameEngine->getAssets().getFont());
+    t.setFillColor(sf::Color::White);
+    t.setScale(sf::Vector2f{t.getScale().x * 0.3f, t.getScale().y * 0.3f});
     sf::CircleShape c;
-    c.setRadius(1.f);
+    c.setRadius(2.f);
     c.setOrigin(sf::Vector2f{c.getRadius(), c.getRadius()});
     c.setFillColor(sf::Color::Yellow);
     for (NavigationNode& node : m_navigationManager.getNodes())
     {
       c.setPosition(sf::Vector2f{node.pos.x, node.pos.y});
       m_gameEngine->getWindow().draw(c);
+      t.setPosition(sf::Vector2f{node.pos.x, node.pos.y});
+      t.setString(std::to_string(node.id));
+      m_gameEngine->getWindow().draw(t);
     }
   }
 }
@@ -831,27 +846,34 @@ void ScenePrologue::sMovement()
       CState& cState      = e.getComponent<CState>();
       CAttack& cAttack    = e.getComponent<CAttack>();
       
-      if (cInput.left)
-      {
-        cTransform.vel.x -= M_SPEED;
-        cTransform.scale.x = 1.0f;
+      if(cInput.attack)
+      { }
 
-        if (cState.onGround)
-          changeAnimation(e, "Mushroom_Run_Anim");
-      }
-      else if (cInput.right)
+      if(!cAttack.attacking)
       {
-        cTransform.vel.x += M_SPEED;
-        cTransform.scale.x = -1.0f;
+        if (cInput.left)
+        {
+          cTransform.vel.x -= M_SPEED;
+          cTransform.scale.x = 1.0f;
 
-        if (cState.onGround && !cState.slide)
-          changeAnimation(e, "Mushroom_Run_Anim");
+          if (cState.onGround)
+            changeAnimation(e, "Mushroom_Run_Anim");
+        }
+        else if (cInput.right)
+        {
+          cTransform.vel.x += M_SPEED;
+          cTransform.scale.x = -1.0f;
+
+          if (cState.onGround && !cState.slide)
+            changeAnimation(e, "Mushroom_Run_Anim");
+        }
+        else if (!cInput.left && !cInput.right)
+        {
+          if (cState.onGround)
+            changeAnimation(e, "Mushroom_Idle_Anim"); 
+        }
       }
-      else if (!cInput.left && !cInput.right)
-      {
-        if (cState.onGround)
-          changeAnimation(e, "Mushroom_Idle_Anim"); 
-      }
+
       // === GRAVITY (only works if we don't climb) ===
       if (gravity.has && !cState.climp)
       {
@@ -880,10 +902,7 @@ void ScenePrologue::sMovement()
       // === RESET HORIZONTAL VELOCITY ===
       cTransform.vel.x = 0.0f;
       
-      // cInput.left = false;
-      // cInput.right = false;
-      // cInput.up = false;
-      // cInput.down = false;
+
     }
   }
 }
@@ -895,7 +914,6 @@ void ScenePrologue::sAttack(sf::Time deltaTime)
   for (Entity& e : m_entityManager.getEntities())
   {
     if (!e.getComponent<CActive>().active) continue;
-    if (e.getComponent<CTag>().tag != Object::Player) continue;
 
     CInput&     cInput      = e.getComponent<CInput>();
     CAttack&    cAttack     = e.getComponent<CAttack>();
@@ -1115,10 +1133,17 @@ bool playerVisibility(Entity& entityA, Entity& entityB, std::vector<Entity> allE
 
 void ScenePrologue::sEnemyAI()
 {
-  static EnemyState prevState = EnemyState::None;
   std::vector<NavigationNode>& nodes = m_navigationManager.getNodes();
   Entity& player = m_entityManager.getEntities()[m_entityManager.getPlayerIndex()];
   CTransform& playerTr = player.getComponent<CTransform>();
+  
+  unsigned short collidedPlayerNodeId = 0;
+  for (NavigationNode& n : nodes)
+  {
+    if(Collision::NNodeCollision(player, n) != 0)
+      collidedPlayerNodeId = n.id;
+  }
+  
   for (Entity& e : m_entityManager.getEntities())
   {
     if (!e.getComponent<CEnemyAI>().has) continue;
@@ -1126,45 +1151,107 @@ void ScenePrologue::sEnemyAI()
     CEnemyAI& enemyAI = e.getComponent<CEnemyAI>();
     CInput& eInput = e.getComponent<CInput>();
     CTransform& eTr = e.getComponent<CTransform>(); 
+   
+    // Vision of the enemy section
+    bool EnemyCanSeePlayer   = playerVisibility(player, e, m_entityManager.getEntities());
+    float playerDistance     = playerTr.pos.distance(eTr.pos);
+    bool playerEnemyCollide  = Collision::getOverlap(player, e) != 0;
     
-    //Vision of the enemy section
-    if(playerVisibility(player, e, m_entityManager.getEntities()))
-      enemyAI.enemyState = EnemyState::Attack;
-    else
+    // AI state switching
+    switch (enemyAI.enemyState)
     {
-      float xDistance = eTr.pos.x - playerTr.pos.x; 
-      if(enemyAI.enemyState == EnemyState::Attack && std::fabs(xDistance) < M_FOLLOW_DISTANCE )
+      case EnemyState::Patrol:
+        // If the enemy sees the player, switch to canAttack
+        if (EnemyCanSeePlayer)
+        {
+          enemyAI.enemyState = EnemyState::canAttack;
+        }
+        break;
+      case EnemyState::canAttack:
+        // If already touching the player — start attacking
+        if (playerEnemyCollide)
+        {
+          enemyAI.enemyState = EnemyState::Attack;
+        }
+        // If you lose sight of the player and don't touch it, return to patrolling
+        else if (!EnemyCanSeePlayer)
+        {
+          enemyAI.enemyState = EnemyState::Patrol;
+        }
+        break;
+      // If no longer touching the player — reduce aggression to canAttack
+      case EnemyState::Attack:
+        if (!playerEnemyCollide)
+        {
+          enemyAI.enemyState = EnemyState::canAttack;
+        }
+        break;
+      case EnemyState::None:
+        // Initial state, can be assigned to Patrol or canAttack as needed
+        enemyAI.enemyState = EnemyState::Patrol;
+        break;
+    }
+
+    
+    if(enemyAI.prevEnemyState != enemyAI.enemyState)
+    { 
+      std::cout << "Clear path ";
+      enemyAI.hawePath = false;
+      enemyAI.path.clear();
+    }
+
+    if(eTr.scale.x == -1)
+    {
+      std::cout << "-->";
+    }
+    else if(eTr.scale.x == 1)
+    {
+      std::cout << "<--";
+    }
+
+    enemyAI.prevEnemyState = enemyAI.enemyState;
+    
+    if(enemyAI.enemyState == EnemyState::Patrol)
+    {
+      std::cout << "State  Patrol ";
+    }
+    else if(enemyAI.enemyState == EnemyState::canAttack)
+    {
+      std::cout << "State  canAttack ";
+    }
+    else if(enemyAI.enemyState == EnemyState::Attack)
+    {
+      std::cout << "State  Attack ";
+    }
+
+    for (auto& i : enemyAI.path)
+      std::cout << i << " ";
+    
+    std::cout << " CoPlayerNodeId: " << collidedPlayerNodeId << ", ";
+    std::cout << " Path state: " << enemyAI.hawePath;
+    std::cout << std::endl;
+
+    unsigned short collidedEnemyNodeId = 0; 
+    
+    for (NavigationNode& n : nodes)
+    {
+      if(!n.active) continue;
+      
+      if(Collision::NNodeCollision(e, n) != 0 && collidedEnemyNodeId == 0)
+        collidedEnemyNodeId = n.id;
+      
+      if (collidedEnemyNodeId == 0) continue;
+ 
+      if(collidedPlayerNodeId != enemyAI.collidedPlayerNodeId &&
+        enemyAI.enemyState == EnemyState::canAttack)
       {
-        //red Critical section start
-        if (xDistance < 0.f)
-        {
-          eTr.scale.x = -1;
-        }
-        else if (xDistance > 0.f)
-        {
-          eTr.scale.x = 1;
-        }
-        //red Critical section end
-        enemyAI.enemyState = EnemyState::Attack;
         enemyAI.hawePath = false;
       }
-      else
-        enemyAI.enemyState = EnemyState::Patrol;
-    }
-    //Vision of the enemy section End
+      
+      enemyAI.collidedPlayerNodeId = collidedPlayerNodeId;
 
-    if (enemyAI.enemyState == EnemyState::Patrol)
-    {
-      if(prevState != EnemyState::Patrol)
+      if(enemyAI.enemyState == EnemyState::Patrol)
       {
-       std::cout << "Patrol" << std::endl;
-      }
-      prevState = EnemyState::Patrol;
-      for (NavigationNode& n : nodes)
-      {
-        if(!n.active) continue;
-
-        if (Collision::NNodeCollision(e, n) == 0) continue;
         if (!enemyAI.hawePath)
         {
           std::vector<std::vector<unsigned short>> calculatedPathes;
@@ -1173,32 +1260,29 @@ void ScenePrologue::sEnemyAI()
           nodeScane(n, enemyAI, path, visited, nodes, calculatedPathes);
 
           if (calculatedPathes.empty()) continue;
-          
-          for(size_t i = 0; i< (calculatedPathes.size() > 1 ? calculatedPathes.size()-1 : calculatedPathes.size()); ++i)
+         
+         std::cout << "Size: " << calculatedPathes.size() << "\n";
+          if(calculatedPathes.size() > 1)
           {
-            if(calculatedPathes.size() > 1)
-            {
-              if(calculatedPathes[i].size() < calculatedPathes[i+1].size())
-                enemyAI.path = calculatedPathes[i+1];
-              else
-                enemyAI.path = calculatedPathes[i];
-            }
-            else
-              enemyAI.path = calculatedPathes[0];
+            m_gameEngine->getRandGen().seed(
+              std::chrono::steady_clock::now().time_since_epoch().count()
+            );
+            
+            std::uniform_int_distribution<> dist(0, calculatedPathes.size()-1);
+            enemyAI.path = calculatedPathes[dist(m_gameEngine->getRandGen())];
           }
+          else
+          {
+            enemyAI.path = calculatedPathes[0];
+          }
+          
+
           std::reverse(enemyAI.path.begin(), enemyAI.path.end());
           enemyAI.hawePath = true;
           break;
         }
-
         if(enemyAI.hawePath)
         { 
-          if(enemyAI.path.empty())
-          {
-            enemyAI.hawePath = false;           
-            return;
-          }
-
           unsigned short  targetNodeId = enemyAI.path[enemyAI.path.size()-1];
           NavigationNode& targetNode  = nodes[targetNodeId];
           CTransform&     enemyT =  e.getComponent<CTransform>();
@@ -1207,12 +1291,16 @@ void ScenePrologue::sEnemyAI()
 
           if(distance < THRESHOLD_DISTANCE)
           {
-            std::cerr << "Curent index path: " << enemyAI.path.size() << std::endl;
             enemyAI.path.pop_back();
-            eInput.left = eInput.right = eInput.up = eInput.down = false;
+            if(enemyAI.path.empty())
+            {
+              enemyAI.hawePath = false;
+              eInput.right=eInput.left = false;
+            }
             return;
           }
 
+          
           if(targetNode.pos.x < enemyT.pos.x)
           {
             eInput.left = true;
@@ -1223,93 +1311,69 @@ void ScenePrologue::sEnemyAI()
           }
         }
       }
-    }
-    else if(enemyAI.enemyState == EnemyState::Attack)
-    {
-      prevState = EnemyState::Attack;
-
-      for (NavigationNode& n : nodes)
+      else if(enemyAI.enemyState == EnemyState::canAttack)
       {
-        if(!n.active) continue;
-
-        unsigned short collidedPlayerNodeId = Collision::NNodeCollision(player, n);
-        if(collidedPlayerNodeId == 0) continue;
-
-        enemyAI.collidedPlayerNodeId = collidedPlayerNodeId;
-        
-        if (!enemyAI.hawePath)
+        if(!enemyAI.hawePath)
         {
           std::vector<std::vector<unsigned short>> calculatedPathes;
           std::unordered_set<unsigned short> visited;
           std::vector<unsigned short> path;
-          nodeScane(n, enemyAI, path, visited, nodes, calculatedPathes);
+          
+          nodeScane(nodes[collidedEnemyNodeId], enemyAI, path, visited, nodes, calculatedPathes);
 
           if (calculatedPathes.empty()) continue;
-         
-          //Clculated path from enemy to player
-          for (size_t i = 0; i < calculatedPathes.size(); ++i)
+          
+          for (const auto& p : calculatedPathes)
           {
-            const auto& it = std::find(calculatedPathes[i].begin(), calculatedPathes[i].end(), enemyAI.collidedPlayerNodeId);
-            if(it == calculatedPathes[i].end()) continue;
-
-            enemyAI.path = calculatedPathes[i];
-            break;
+            if(std::find(p.begin(), p.end(), collidedPlayerNodeId) != p.end())
+            {
+              enemyAI.path = p;
+              break;
+            }
           }
           
-          if(enemyAI.path.empty()) continue;
-         
-          const auto& it = std::find(enemyAI.path.begin(), enemyAI.path.end(), enemyAI.collidedPlayerNodeId);
-          if(it == enemyAI.path.end()) continue;
+          auto it = std::find(enemyAI.path.begin(), enemyAI.path.end(), collidedPlayerNodeId);
+          if (it != enemyAI.path.end())
+              enemyAI.path.erase(it+1, enemyAI.path.end());
 
-          enemyAI.path.erase(it+1, enemyAI.path.end());
-          
-          std::cout << "New Attack path: "; 
-          for (auto i : enemyAI.path)
+          if (!enemyAI.path.empty())
           {
-            std::cout << " " << i;
+            std::reverse(enemyAI.path.begin(), enemyAI.path.end());
+            enemyAI.hawePath = true;
+            enemyAI.path.pop_back();
           }
-          std::cout << std::endl;
-
-          std::reverse(enemyAI.path.begin(), path.end());
-          enemyAI.hawePath = true;
           break;
         }
-        else if (enemyAI.hawePath)
+        if(enemyAI.hawePath)
         {
-          if(enemyAI.path.empty())
+          if (enemyAI.path.empty())
           {
-            enemyAI.hawePath = false;           
+            enemyAI.hawePath = false;
             return;
           }
 
-          unsigned short  targetNodeId = enemyAI.path[enemyAI.path.size()-1];
-          Vec2& targetNode  = nodes[targetNodeId].pos;
-          CTransform&     enemyT =  e.getComponent<CTransform>();
+          unsigned short targetNodeId = enemyAI.path.back();
+          Vec2           targetPos = nodes[targetNodeId].pos;
+          CTransform&    enemyT = e.getComponent<CTransform>();
           
-          float distance = targetNode.distance(enemyT.pos);
+          float distance = targetPos.distance(enemyT.pos);
 
-          if(distance < THRESHOLD_DISTANCE)
-          {
+          if (distance < THRESHOLD_DISTANCE)
             enemyAI.path.pop_back();
-            eInput.left = eInput.right = eInput.up = eInput.down = false;
-            return;
-          }
-          else if(enemyAI.path.size() == 1)
-          {
-            targetNode = player.getComponent<CTransform>().pos;
-            eInput.left = eInput.right = eInput.up = eInput.down = false;
-          }
-
-          if(targetNode.x < enemyT.pos.x)
-          {
+         
+          eInput.right=eInput.left=false;
+          
+          if (playerTr.pos.x < enemyT.pos.x )
             eInput.left = true;
-          }
-          else if(targetNode.x > enemyT.pos.x)
-          { 
+          else if (playerTr.pos.x > enemyT.pos.x)
             eInput.right = true;
-          } 
         }
       }
-    }
+      else if(enemyAI.enemyState == EnemyState::Attack)
+      {
+        eInput.right=eInput.left=false;
+        eInput.attack = true;
+      }
+    } 
   }
 }

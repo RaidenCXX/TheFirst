@@ -25,6 +25,7 @@ enum class EnemyState
 {
   None    = 0,
   Patrol,
+  canAttack,
   Attack
 };
 
