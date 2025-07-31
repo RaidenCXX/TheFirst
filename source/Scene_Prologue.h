@@ -1,4 +1,5 @@
 #pragma once
+#include "Assets.h"
 #include "Entity.h"
 #include "GameEngine.h"
 #include "NavigationNode.h"
@@ -8,10 +9,19 @@
 #include "SFML/System/Time.hpp"
 #include "Scene.h"
 #include "Vec2.h"
+#include "Weapon.h"
 #include <mutex>
+#include <string>
 #include <vector>
 #include <condition_variable>
 #include <unordered_set>
+
+struct PlayerHp
+{
+  Animation HpRamp;
+  Animation HpBar;
+};
+
 class ScenePrologue : public Scene 
 {
  
@@ -28,9 +38,10 @@ class ScenePrologue : public Scene
   std::condition_variable       m_cv;
   std::mutex                    m_loaderMutex;
   size_t                        m_activeThreadCount = 0;
-
+  PlayerHp                      m_hpPlayer;
   
-  void    playerInit(Vec2& pos);
+  void    playerInit(Vec2& pos, const std::string &animName, bool repeat,
+                     Weapon&& weapon);
   void    loadLevel(const std::string sceneConfigPath);
   void    loadNodeMesh(const std::string sceneConfigPath);
   Vec2    gridToMidPixel(float gridX, float gridY);
@@ -56,4 +67,5 @@ public:
           void        sAttack(sf::Time deltaTime);
           void        sCollision();
           void        sEnemyAI();
+          void        sLife(sf::Time deltaTime);
 };

@@ -1,7 +1,8 @@
-Player      1     28    IdleAnim                    1
+//ObjectName//PosX//PosY//AnimationName             //Repeat //Weapon           //AnimDuration    //NumberAnimation//WeaponDamage//WeaponBBox
 
-Mushroom    60    18    Mushroom_Idle_Anim          1
+Player      2     20    Idle_Anim                   1         Sword               0.5               3                 35          30    20
 
+Mushroom    60    18    Mushroom_Idle_Anim          1         Mushroom_Head       2.3               1                 30          20    30
 
 GrassTile
 TileBbox    1       30    GrassTile1_Static         0

@@ -39,20 +39,6 @@
   CBoundingBox& bboxA       = entity.getComponent<CBoundingBox>();
   CTransform&   transformA  = entity.getComponent<CTransform>();
 
-  // if(entity.getComponent<CTag>().tag == Object::Player)
-  // {
-  //   std::cout << "Player log start\n";
-  //   std::cout << "bboxA.halfSize.x: " << bboxA.halfSize.x << std::endl;
-  //   std::cout << "transformA.pos.x: " << transformA.pos.x << "pos.y: "<< transformA.pos.y << std::endl;
-  //   std::cout << "Player log end\n";
-  // }
-  //
-  //   std::cout << "Node log start\n";
-  //   std::cout << "NNode.size: " << NNode.size << std::endl;
-  //   std::cout << "NNode.pos.x: " << NNode.pos.x << " pos.y" << NNode.pos.y << std::endl;
-  //   std::cout << "Node log end\n";
-
-
   float oX = (bboxA.halfSize.x + NNode.size / 2) - std::fabs(transformA.pos.x - NNode.pos.x);
   float oY = (bboxA.halfSize.y + NNode.size / 2) - std::fabs(transformA.pos.y - NNode.pos.y);
 
@@ -68,6 +54,21 @@
   return overlap;
 }
 
+bool Collision::getWeaponOverlap(Entity& entityA, Entity& entityB, const Vec2& weaponBBox)
+{
+  constexpr float epsilon = 0.001f;
+
+  CBoundingBox& bboxA       = entityA.getComponent<CBoundingBox>();
+  CTransform&   transformA  = entityA.getComponent<CTransform>();
+
+  CBoundingBox& bboxB       = entityB.getComponent<CBoundingBox>();
+  CTransform&   transformB  = entityB.getComponent<CTransform>();
+
+  float oX = (weaponBBox.x / 2 + bboxB.halfSize.x) - std::fabsf((transformA.pos.x + (bboxA.halfSize.x * transformA.scale.x)) - transformB.pos.x);
+  float oY = (bboxA.halfSize.y + bboxB.halfSize.y) - std::fabsf(transformA.pos.y - transformB.pos.y);
+  
+  return oX > epsilon && oY > epsilon;
+}
 
 Vec2 Collision::getPreviousOverlap(Entity& entityA, Entity& entityB)
 {   
@@ -284,7 +285,6 @@ Vec2 Collision::lineIntersect(Vec2 A, Vec2 B, Vec2 C, Vec2 D)
   Vec2 R = B-A;
   Vec2 S = D-C;
   float RxS = R.cross(S);
-  if(RxS == 0.0f) return intersectP;
   Vec2 CmA = C-A;
   float t = CmA.cross(S)/RxS;
   float u = CmA.cross(R) / RxS;
@@ -294,5 +294,6 @@ Vec2 Collision::lineIntersect(Vec2 A, Vec2 B, Vec2 C, Vec2 D)
     intersectP.x = A.x + t * R.x;
     intersectP.y = A.y + t * R.y;
   }
+
   return intersectP; 
 }

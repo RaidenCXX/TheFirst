@@ -66,4 +66,16 @@ size_t  EntityManager::getNumActiveEntities()
 void   EntityManager::destroyEntity(Entity& entity)
 {
   entity.getComponent<CActive>().active = false;
+  entity.getComponent<CTransform>().has = false;
+  entity.getComponent<CAnimation>().has = false;
+  entity.getComponent<CAnimation>().has = false;
+  entity.getComponent<CTag>().has = false;
+  entity.getComponent<CInput>().has = false;
+  entity.getComponent<CGravity>().has = false;
+  entity.getComponent<CBoundingBox>().has = false;
+  entity.getComponent<CState>().has = false;
+  entity.getComponent<CAttack>().has = false;
+  entity.getComponent<CWeapon>().has = false;
+  entity.getComponent<CEnemyAI>().has = false;
+  entity.getComponent<CHp>().has = false;
 }

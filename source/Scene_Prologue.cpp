@@ -9,6 +9,7 @@
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/Sprite.hpp"
 #include "SFML/Graphics/Text.hpp"
+#include "SFML/System/Angle.hpp"
 #include "SFML/System/Time.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Keyboard.hpp"
@@ -68,6 +69,7 @@ void  ScenePrologue::update(sf::Time deltaTime)
   sMovement();
   sAttack(deltaTime);
   sCollision();
+  sLife(deltaTime);
 }
 
 void ScenePrologue::render(sf::Time deltaTime)
@@ -126,11 +128,15 @@ void ScenePrologue::init(const std::string sceneConfigPath)
     anim.update();
     w.draw(anim.getSprite());
     w.display();
-    
   }
 
+  m_hpPlayer.HpRamp = m_gameEngine->getAssets().getAnimation("HealthBarPanel_Anim");
+  m_hpPlayer.HpBar = m_gameEngine->getAssets().getAnimation("HealthBar_Anim");
+  m_hpPlayer.HpBar.getSprite().setOrigin(m_hpPlayer.HpBar.getSprite().getOrigin() - m_hpPlayer.HpBar.getSprite().getLocalBounds().size * 0.5f);
+  
   lLoader.join();
-  nLoader.join();  
+  nLoader.join();
+
 }
 
 std::string getFirstWord(const std::string& str)
@@ -190,20 +196,33 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
 
     if(convertToEnum(token) == Object::Player)
     {
-      Vec2 pos;
-      std::string animName;
+      Vec2 pos, weaponBbox;
+      std::string animName, weaponName;
+      float animationDuration;
+      size_t numbersAnimations;
+      unsigned short weaponDamage;
       bool repeat;
-      
-      stream >> pos.x >> pos.y >> animName >> repeat; 
-      playerInit(pos);
+ 
+      stream >> pos.x >> pos.y >> animName >> repeat >>
+        weaponName >> animationDuration >> numbersAnimations >>
+        weaponDamage >> weaponBbox.x >> weaponBbox.y;
+
+      playerInit(pos, animName, repeat,
+                 Weapon{weaponName ,sf::seconds(animationDuration),
+                        numbersAnimations, weaponBbox, weaponDamage});
     }
     else if(convertToEnum(token) == Object::Mushroom)
     {
-      Vec2 pos;
-      std::string animationName;
+      Vec2 pos, weaponBbox;
+      std::string animationName, weaponName;
+      float animationDuration;
+      size_t numbersAnimations;
+      unsigned short weaponDamage;
       bool repeat;
-      
-      stream >> pos.x >> pos.y >> animationName;
+
+      stream >> pos.x >> pos.y >> animationName >> repeat >>
+        weaponName >> animationDuration >> numbersAnimations >>
+         weaponDamage >> weaponBbox.x >> weaponBbox.y;
       
       Vec2 newPos = gridToMidPixel(pos.x, pos.y);
       
@@ -213,16 +232,27 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       CTransform& tr = e.getComponent<CTransform>();
       tr.prevPos = e.getComponent<CTransform>().pos;
       tr.scale = Vec2{1.0f, 1.0f};
-      e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
-      e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
-      e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x, e.getComponent<CAnimation>().animation.getSize().y);
-      e.addComponent<CGravity>(GRAVITY, MAX_SPEED_FALL, JUMP_VElOCITY, FALL_MULTIPLIER);
+      e.addComponent<CAnimation>(m_gameEngine->getAssets().
+                                 getAnimation(animationName));
+      e.getComponent<CAnimation>().animation.getSprite().
+        setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x,
+                                e.getComponent<CTransform>().pos.y});
+      e.addComponent<CBoundingBox>(e.getComponent<CAnimation>()
+                                   .animation.getSize().x,
+                                   e.getComponent<CAnimation>().
+                                   animation.getSize().y);
+      e.addComponent<CGravity>(GRAVITY, MAX_SPEED_FALL,
+                               JUMP_VElOCITY,
+                               FALL_MULTIPLIER);
       e.addComponent<CState>();
       e.addComponent<CEnemyAI>(EnemyState::Patrol, M_PATROL_DISTANCE);
-      e.addComponent<CWeapon>(Weapon{"Mushroom_Head", sf::seconds(2.3f), 1});
+      e.addComponent<CWeapon>(Weapon{weaponName,
+                                    sf::seconds(animationDuration),
+                                    numbersAnimations,weaponBbox ,
+                                    weaponDamage});
       e.addComponent<CAttack>();
       e.addComponent<CHp>(M_HP);
-      std::cout << "Mushroom added " << tr.pos.x << " " << tr.pos.y << std::endl;
+      std::cout << "Mushroom added " << std::endl;
     }
     else if(convertToEnum(token) == Object::TileBbox)
     {
@@ -241,6 +271,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x,  e.getComponent<CAnimation>().animation.getSize().y);
+      std::cout << "TileBbox added " << std::endl;
     }
     else if( convertToEnum(token) == Object::SlideRBbox ||
              convertToEnum(token) == Object::SlideLBbox)
@@ -262,6 +293,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x,  e.getComponent<CAnimation>().animation.getSize().y);
+      std::cout << "Slide Bbox added " << std::endl;
     }
     else if(convertToEnum(token) == Object::Bridge)
     {
@@ -281,6 +313,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       
       Animation& bbox = m_gameEngine->getAssets().getAnimation(animationName);
       e.addComponent<CBoundingBox>(bbox.getSize().x , bbox.getSize().y, Vec2{0.f, bbox.getSize().y / 2});
+      std::cout << "Bridge added " << std::endl;
     }
     else if(convertToEnum(token) == Object::Tile)
     {
@@ -296,6 +329,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       e.addComponent<CTransform>(newPos);
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});  
+      std::cout << "Tile added " << std::endl;
     }
     else if (convertToEnum(token) == Object::Ladder)
     {
@@ -314,6 +348,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x * 0.2, e.getComponent<CAnimation>().animation.getSize().y);
+      std::cout << "Ladder added " << std::endl;
     }
     else if (convertToEnum(token) == Object::SmallPlatform)
     {
@@ -332,6 +367,7 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
       e.addComponent<CBoundingBox>(e.getComponent<CAnimation>().animation.getSize().x,  e.getComponent<CAnimation>().animation.getSize().y);
+      std::cout << "SmallPlatform added " << std::endl;
     }
     else if(convertToEnum(token) == Object::Background)
     {
@@ -347,6 +383,11 @@ void  ScenePrologue::loadLevel(const std::string sceneConfigPath)
       e.addComponent<CTransform>(newPos);
       e.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation(animationName));
       e.getComponent<CAnimation>().animation.getSprite().setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x, e.getComponent<CTransform>().pos.y});
+      std::cout << "Mushroom Background " << std::endl;
+    }
+    else if(convertToEnum(token) == Object::None)
+    {
+      continue;
     }
     else if(token == "End")
     {
@@ -408,20 +449,25 @@ Vec2  ScenePrologue::gridToMidPixel(float gridX, float gridY)
   return Vec2{(gridX * 16) - 8, (gridY * 16) - 8};
 }
 
-void ScenePrologue::playerInit(Vec2& pos)
+
+void ScenePrologue::playerInit(Vec2& pos, const std::string &animName, 
+                               bool repeat, Weapon&& weapon)
 {
   Entity player = m_entityManager.addEntity(Object::Player);
  
   player.addComponent<CTransform>(gridToMidPixel(pos.x, pos.y));
   player.getComponent<CTransform>().dynamic = true;
   player.getComponent<CTransform>().scale = Vec2{1.0f, 1.0f};
-  player.addComponent<CAnimation>(m_gameEngine->getAssets().getAnimation("Idle_Anim"));
+  player.addComponent<CAnimation>(m_gameEngine->getAssets().
+                                  getAnimation(animName));
   player.addComponent<CInput>(true);
   player.addComponent<CBoundingBox>(20.f, 36.f);
-  player.addComponent<CGravity>(GRAVITY, MAX_SPEED_FALL, JUMP_VElOCITY, FALL_MULTIPLIER);
+  player.addComponent<CGravity>(GRAVITY, MAX_SPEED_FALL,
+                                JUMP_VElOCITY, FALL_MULTIPLIER);
   player.addComponent<CState>(true);
-  player.addComponent<CWeapon>(Weapon{"Sword", sf::seconds(0.5f), 3});
+  player.addComponent<CWeapon>(std::move(weapon));
   player.addComponent<CHp>(PLAYER_HP);
+  std::cout << "Player is added\n";
 }
 
 
@@ -436,7 +482,7 @@ ScenePrologue::ScenePrologue(GameEngine* gameEngine)
 void  ScenePrologue::sRender()
 {
   m_gameEngine->getWindow().clear(sf::Color{28, 165, 255});
-
+  
   CTransform& transform = m_entityManager.getEntity(m_entityManager.getPlayerIndex()).getComponent<CTransform>();
 
   sf::Vector2f viewCenter = m_view.getCenter();
@@ -527,9 +573,22 @@ void  ScenePrologue::sRender()
       }
     }
   }
-  
+
+  //Player HP bar
+  CHp& playerHp = m_entityManager.getEntities()[m_entityManager.getPlayerIndex()].getComponent<CHp>();
+  float Hp;
+  playerHp.healthPoints <= 0 ? Hp = 0 : Hp  = (playerHp.healthPoints / 2.f) * 0.01;
+
+  m_hpPlayer.HpRamp.getSprite().setPosition(m_view.getCenter() - m_view.getSize() * 0.43f);
+  m_hpPlayer.HpBar.getSprite().setPosition(m_view.getCenter() - (m_view.getSize() * 0.43f) -
+    (static_cast<sf::Vector2f>(m_hpPlayer.HpBar.getSprite().getTexture().getSize()) * 0.5f ));
+ 
+  m_hpPlayer.HpBar.getSprite().setScale(sf::Vector2f{Hp , 1.f});
+  m_gameEngine->getWindow().draw(m_hpPlayer.HpBar.getSprite());
+  m_gameEngine->getWindow().draw(m_hpPlayer.HpRamp.getSprite());
+
   //Rendering bounding box 
-  renderBoundingBox(m_drawCollision);  
+  renderBoundingBox(m_drawCollision);
 
   m_gameEngine->getWindow().display();
 }
@@ -543,16 +602,26 @@ void ScenePrologue::renderBoundingBox(bool active)
     rect.setFillColor(sf::Color::Transparent);
     rect.setOutlineThickness(-0.3f);
     rect.setOutlineColor(sf::Color::White);
+    sf::CircleShape triangl(5.f , 3);
+    triangl.setOrigin( sf::Vector2f{triangl.getPosition().x + (triangl.getRadius() * 0.5f),
+                                    triangl.getPosition().y + (triangl.getRadius() * 0.5f)});
+    triangl.setFillColor(sf::Color::Green);
 
     circl.setFillColor(sf::Color::Cyan);
     circl.setRadius(2.f);
+
+    
+
     for (Entity& e : m_entityManager.getEntities())
     {
+      CTransform& cTr = e.getComponent<CTransform>();
+      CTag&       cTag = e.getComponent<CTag>();
+
       if(e.getComponent<CActive>().active && e.getComponent<CBoundingBox>().has)
       {
         rect.setSize(sf::Vector2f{e.getComponent<CBoundingBox>().size.x, e.getComponent<CBoundingBox>().size.y});
         rect.setOrigin(sf::Vector2f{e.getComponent<CBoundingBox>().halfSize.x, e.getComponent<CBoundingBox>().halfSize.y});
-      
+         
         if(e.getComponent<CTag>().tag == Object::Player)
         {
           circl.setOrigin(sf::Vector2f{circl.getRadius(), circl.getRadius()});
@@ -580,6 +649,18 @@ void ScenePrologue::renderBoundingBox(bool active)
             e.getComponent<CTransform>().pos.y + e.getComponent<CBoundingBox>().halfSize.y});
         }
 
+        if(cTag.tag == Object::Player ||
+          cTag.tag   == Object::Mushroom)
+        {
+          triangl.setPosition(sf::Vector2f{cTr.pos.x, cTr.pos.y});
+          if(cTr.scale.x > 0)
+            triangl.setRotation(sf::degrees(90.f));
+          else if(cTr.scale.x < 0)
+            triangl.setRotation(sf::degrees(270.f));
+
+          m_gameEngine->getWindow().draw(triangl);
+        }
+
         rect.setPosition(sf::Vector2f{e.getComponent<CTransform>().pos.x + e.getComponent<CBoundingBox>().offset.x,
           e.getComponent<CTransform>().pos.y + e.getComponent<CBoundingBox>().offset.y});
         m_gameEngine->getWindow().draw(rect);
@@ -602,6 +683,27 @@ void ScenePrologue::renderBoundingBox(bool active)
       t.setPosition(sf::Vector2f{node.pos.x, node.pos.y});
       t.setString(std::to_string(node.id));
       m_gameEngine->getWindow().draw(t);
+    }
+
+    //Enemy Hp bar
+    sf::RectangleShape enemyBar;
+    enemyBar.setFillColor(sf::Color::Red);
+
+    for (Entity &e : m_entityManager.getEntities())
+    {
+      if(e.getComponent<CTag>().tag != Object::Mushroom) continue; 
+      CTransform &eTr = e.getComponent<CTransform>();
+      CBoundingBox &eBB = e.getComponent<CBoundingBox>();
+      CHp &eHp = e.getComponent<CHp>();
+      enemyBar.setPosition(sf::Vector2f{eTr.pos.x - eBB.halfSize.x, eTr.pos.y - eBB.halfSize.y});
+      enemyBar.setSize(sf::Vector2f{eBB.size.x, 1.f});
+      
+      eHp.healthPoints < 0 ? eHp.healthPoints = 0 : 0 ;
+      
+      float bar = eHp.healthPoints * 0.01;
+
+      enemyBar.setScale(sf::Vector2f{bar ,1.f});
+      m_gameEngine->getWindow().draw(enemyBar);
     }
   }
 }
@@ -701,7 +803,6 @@ void ScenePrologue::sMovement()
   for (Entity& e : m_entityManager.getEntities())
   {
     if (!e.getComponent<CActive>().active) continue;
-
     CTransform& cTransform = e.getComponent<CTransform>();
 
     if (e.getComponent<CTag>().tag == Object::Player)
@@ -711,119 +812,121 @@ void ScenePrologue::sMovement()
       CState& cState      = e.getComponent<CState>();
       CAttack& cAttack    = e.getComponent<CAttack>();
 
-      // === ATTACK INPUT ===
-      if (cInput.attack && !cState.slide)
+      if(!cState.died)
       {
-        // The attack is handled separately in sAttack
-      }
-      // === SHOOT INPUT ===
-      else if (cInput.shoot && !cState.slide)
-      {
-        cInput.canShoot = true;
-      }
+        // === ATTACK INPUT ===
+        if (cInput.attack && !cState.slide)
+        {
+          // The attack is handled separately in sAttack
+        }
+        // === SHOOT INPUT ===
+        else if (cInput.shoot && !cState.slide)
+        {
+          cInput.canShoot = true;
+        }
 
-      // === LADDER MOVEMENT ===
-      if (cState.canClimb)
-      {
-        // Start of climbing up
-        if (cInput.up)
+        // === LADDER MOVEMENT ===
+        if (cState.canClimb)
         {
-          cState.climp      = true;
-          cState.onGround   = false;
-          cTransform.vel.y  = -SPEED_VERTICAL;
-          changeAnimation(e, "Ladder_Climb_Anim");
+          // Start of climbing up
+          if (cInput.up)
+          {
+            cState.climp      = true;
+            cState.onGround   = false;
+            cTransform.vel.y  = -SPEED_VERTICAL;
+            changeAnimation(e, "Ladder_Climb_Anim");
+          }
+          // Start of climbing down
+          else if (cInput.down)
+          {
+            cState.climp      = true;
+            cState.onGround   = false;
+            cTransform.vel.y  = SPEED_VERTICAL;
+            changeAnimation(e, "Ladder_Climb_Anim");
+          }
+          // If we are already climbing, keep the animation and speed along Y
+          else if (cState.climp)
+          {
+            cTransform.vel.y = 0.0f;
+            changeAnimation(e, "Ladder_Climb_Anim");
+            e.getComponent<CAnimation>().animation.reset();
+          }
+          // If you are just near a ladder, you are not doing anything with vertical movement.
         }
-        // Start of climbing down
-        else if (cInput.down)
+        else if(!cState.canClimb)
         {
-          cState.climp      = true;
-          cState.onGround   = false;
-          cTransform.vel.y  = SPEED_VERTICAL;
-          changeAnimation(e, "Ladder_Climb_Anim");
+          cState.climp = false;
         }
-        // If we are already climbing, keep the animation and speed along Y
-        else if (cState.climp)
-        {
-          cTransform.vel.y = 0.0f;
-          changeAnimation(e, "Ladder_Climb_Anim");
-          e.getComponent<CAnimation>().animation.reset();
-        }
-        // If you are just near a ladder, you are not doing anything with vertical movement.
-      }
-      else if(!cState.canClimb)
-      {
-        cState.climp = false;
-      }
 
-      // === HORIZONTAL MOVE (always available, even when canClimb) ===
-      if (!cAttack.attacking)
-      {
-        if (cInput.left && !cState.slide)
+        // === HORIZONTAL MOVE (always available, even when canClimb) ===
+        if (!cAttack.attacking)
         {
-          cTransform.vel.x -= SPEED;
-          cTransform.scale.x = -1.0f;
+          if (cInput.left && !cState.slide)
+          {
+            cTransform.vel.x -= SPEED;
+            cTransform.scale.x = -1.0f;
 
-          if (cState.onGround)
-            changeAnimation(e, "Run_Anim");
-        }
-        else if (cInput.right && !cState.slide)
-        {
-          cTransform.vel.x += SPEED;
-          cTransform.scale.x = 1.0f;
+            if (cState.onGround)
+              changeAnimation(e, "Run_Anim");
+          }
+          else if (cInput.right && !cState.slide)
+          {
+            cTransform.vel.x += SPEED;
+            cTransform.scale.x = 1.0f;
 
-          if (cState.onGround && !cState.slide)
-            changeAnimation(e, "Run_Anim");
+            if (cState.onGround && !cState.slide)
+              changeAnimation(e, "Run_Anim");
+          }
         }
-      }
 
-      // === IDLE / IN-AIR ANIMATION ===
-      if (!cInput.left && !cInput.right)
-      {
-        if (cState.onGround && !cAttack.attacking && !cState.climp)
+        // === IDLE / IN-AIR ANIMATION ===
+        if (!cInput.left && !cInput.right)
         {
-          changeAnimation(e, "Idle_Anim");
+          if (cState.onGround && !cAttack.attacking && !cState.climp)
+          {
+            changeAnimation(e, "Idle_Anim");
+          }
+          else if (!cState.onGround && !cState.climp)
+          {
+            changeAnimation(e, "Jump_Anim", false);
+            cTransform.scale.x = (cTransform.prevPos.x - cTransform.pos.x) <= 0 ?
+              1 : -1;
+          }
         }
-        else if (!cState.onGround && !cState.climp)
+
+        if(cState.slide)
         {
+          changeAnimation(e, "Slide_Anim", false);
+        }
+
+        // === JUMP ===
+        if (cInput.jumpPressed && (cState.onGround || cState.slide))
+        {
+          cTransform.vel.y = -gravity.jumpVelocity;
+          cState.onGround  = false;
+          gravity.acceleration = 0.0f;
           changeAnimation(e, "Jump_Anim", false);
-          cTransform.scale.x = (cTransform.prevPos.x - cTransform.pos.x) <= 0 ?
-            1 : -1;
         }
       }
-
-      if(cState.slide)
-      {
-        changeAnimation(e, "Slide_Anim", false);
-      }
-
-      // === JUMP ===
-      if (cInput.jumpPressed && (cState.onGround || cState.slide))
-      {
-        cTransform.vel.y = -gravity.jumpVelocity;
-        cState.onGround  = false;
-        gravity.acceleration = 0.0f;
-        changeAnimation(e, "Jump_Anim", false);
-      }
-
-      // === GRAVITY (only works if we don't climb) ===
-      if (gravity.has && !cState.climp)
-      {
-        gravity.acceleration += gravity.gravity;
-
-        // Additional acceleration during a fall
-        if (cTransform.vel.y > 0.0f)
+        // === GRAVITY (only works if we don't climb) ===
+        if (gravity.has && !cState.climp)
         {
-          cTransform.vel.y += gravity.gravity * (gravity.fallMultiplier - 1.0f);
-        }
+          gravity.acceleration += gravity.gravity;
 
-        cTransform.vel.y += gravity.acceleration;
+          // Additional acceleration during a fall
+          if (cTransform.vel.y > 0.0f)
+          {
+            cTransform.vel.y += gravity.gravity * (gravity.fallMultiplier - 1.0f);
+          }
 
-        // Maximum fall speed limit
-        if (cTransform.vel.y > gravity.maxSpeedFall)
-        {
-          cTransform.vel.y = gravity.maxSpeedFall;
+          cTransform.vel.y += gravity.acceleration;
+
+          // Maximum fall speed limit
+          if (cTransform.vel.y > gravity.maxSpeedFall)
+          {
+            cTransform.vel.y = gravity.maxSpeedFall;
+          }
         }
-      }
 
       // === VELOCITY UPDATE ===
       cTransform.prevPos = cTransform.pos;
@@ -845,7 +948,8 @@ void ScenePrologue::sMovement()
       CGravity& gravity   = e.getComponent<CGravity>();
       CState& cState      = e.getComponent<CState>();
       CAttack& cAttack    = e.getComponent<CAttack>();
-      
+     if(!cState.died)
+    {
       if(cInput.attack)
       { }
 
@@ -854,7 +958,7 @@ void ScenePrologue::sMovement()
         if (cInput.left)
         {
           cTransform.vel.x -= M_SPEED;
-          cTransform.scale.x = 1.0f;
+          cTransform.scale.x = -1.0f;
 
           if (cState.onGround)
             changeAnimation(e, "Mushroom_Run_Anim");
@@ -862,7 +966,7 @@ void ScenePrologue::sMovement()
         else if (cInput.right)
         {
           cTransform.vel.x += M_SPEED;
-          cTransform.scale.x = -1.0f;
+          cTransform.scale.x = 1.0f;
 
           if (cState.onGround && !cState.slide)
             changeAnimation(e, "Mushroom_Run_Anim");
@@ -873,27 +977,27 @@ void ScenePrologue::sMovement()
             changeAnimation(e, "Mushroom_Idle_Anim"); 
         }
       }
+    }
+    // === GRAVITY (only works if we don't climb) ===
+    if (gravity.has && !cState.climp)
+    {
+      gravity.acceleration += gravity.gravity;
 
-      // === GRAVITY (only works if we don't climb) ===
-      if (gravity.has && !cState.climp)
+      // Additional acceleration during a fall
+      if (cTransform.vel.y > 0.0f)
       {
-        gravity.acceleration += gravity.gravity;
-
-        // Additional acceleration during a fall
-        if (cTransform.vel.y > 0.0f)
-        {
-          cTransform.vel.y += gravity.gravity * (gravity.fallMultiplier - 1.0f);
-        }
-
-        cTransform.vel.y += gravity.acceleration;
-
-        // Maximum fall speed limit
-        if (cTransform.vel.y > gravity.maxSpeedFall)
-        {
-          cTransform.vel.y = gravity.maxSpeedFall;
-        }
+        cTransform.vel.y += gravity.gravity * (gravity.fallMultiplier - 1.0f);
       }
 
+      cTransform.vel.y += gravity.acceleration;
+
+      // Maximum fall speed limit
+      if (cTransform.vel.y > gravity.maxSpeedFall)
+      {
+        cTransform.vel.y = gravity.maxSpeedFall;
+      }
+    }
+    
 
       // === VELOCITY UPDATE ===
       cTransform.prevPos = cTransform.pos;
@@ -901,20 +1005,22 @@ void ScenePrologue::sMovement()
 
       // === RESET HORIZONTAL VELOCITY ===
       cTransform.vel.x = 0.0f;
-      
-
     }
   }
 }
-
-
 
 void ScenePrologue::sAttack(sf::Time deltaTime)
 {
   for (Entity& e : m_entityManager.getEntities())
   {
     if (!e.getComponent<CActive>().active) continue;
-
+    
+    CTag& cTag              = e.getComponent<CTag>();
+    if(!(e.getComponent<CTag>().tag == Object::Player ||
+         e.getComponent<CTag>().tag == Object::Mushroom)) continue;
+    
+    CState&     cState      = e.getComponent<CState>();
+    if(cState.died) continue;
     CInput&     cInput      = e.getComponent<CInput>();
     CAttack&    cAttack     = e.getComponent<CAttack>();
     CAnimation& cAnimation  = e.getComponent<CAnimation>();
@@ -941,6 +1047,7 @@ void ScenePrologue::sAttack(sf::Time deltaTime)
         cAnimation.animation = m_gameEngine->getAssets().getAnimation(animName);
         cAnimation.animation.reset();
 
+        cAttack.damageOnThisAnim = false;
         cAttack.comboTimer = firstWeapon.getComboTimer();
       }
     }
@@ -963,6 +1070,7 @@ void ScenePrologue::sAttack(sf::Time deltaTime)
 
           cAttack.comboTimer = firstWeapon.getComboTimer();
           cAttack.bufferedAttack = false;
+          cAttack.damageOnThisAnim = false;
         }
         else
         {
@@ -971,9 +1079,43 @@ void ScenePrologue::sAttack(sf::Time deltaTime)
           cAttack.comboStep = 0;
           cAttack.bufferedAttack = false;
 
-          // return to Idle anim
-          cAnimation.animation = m_gameEngine->getAssets().getAnimation("Idle_Anim");
-          cAnimation.animation.reset();
+          // return to Idle anim 
+          switch (cTag.tag)
+          {
+          case Object::Player:
+            cAnimation.animation = m_gameEngine->getAssets().getAnimation("Idle_Anim");
+            cAnimation.animation.reset();
+            break;
+          case Object::Mushroom:
+            cAnimation.animation = m_gameEngine->getAssets().getAnimation("Mushroom_Idle_Anim");
+            cAnimation.animation.reset();
+            break;
+          default:
+            break;
+          }
+        }
+      }
+        
+      if(cAttack.comboTimer < firstWeapon.getComboTimer() * 0.6f &&
+         cAttack.comboTimer > firstWeapon.getComboTimer() * 0.4f &&
+         !cAttack.damageOnThisAnim)
+      {
+        for (Entity& eTarget : m_entityManager.getEntities())
+        {
+          if(&e == &eTarget) continue;
+          CTag& tagTarget = eTarget.getComponent<CTag>();
+          if(!(tagTarget.tag == Object::Player ||
+            tagTarget.tag == Object::Mushroom))   continue;
+         
+          bool weponColl = Collision::getWeaponOverlap(e, eTarget, firstWeapon.getWeaponBBox());
+          std::cout << weponColl << std::endl;
+          if(!(cAttack.damageOnThisAnim) && weponColl)
+          {
+            eTarget.getComponent<CHp>().healthPoints -= firstWeapon.getDamage();
+            std::cout <<"HP: " <<e.getComponent<CHp>().healthPoints << " Damage: " << firstWeapon.getDamage() << std::endl;
+            cAttack.damageOnThisAnim = true;
+          }
+          
         }
       }
 
@@ -983,10 +1125,23 @@ void ScenePrologue::sAttack(sf::Time deltaTime)
         cAttack.attacking = false;
         cAttack.comboStep = 0;
         cAttack.bufferedAttack = false;
-
-        cAnimation.animation = m_gameEngine->getAssets().getAnimation("Idle_Anim");
-        cAnimation.animation.reset();
+        
+        switch (cTag.tag)
+        {
+        case Object::Player:
+          cAnimation.animation = m_gameEngine->getAssets().getAnimation("Idle_Anim");
+          cAnimation.animation.reset();
+          break;
+        case Object::Mushroom:
+          cAnimation.animation = m_gameEngine->getAssets().getAnimation("Mushroom_Idle_Anim");
+          cAnimation.animation.reset();
+          break;
+        default:
+          break;
+        }
       }
+       
+
     }
 
     // Reset input attack state
@@ -1096,7 +1251,7 @@ bool playerVisibility(Entity& entityA, Entity& entityB, std::vector<Entity> allE
   if(dist.lenght() >= M_VIEW_DISTANCE) return false;
 
   //If the gaze is not directed towards the player
-  Vec2 enemyViewDir {entityB.getComponent<CTransform>().scale.x, 0.f};
+  Vec2 enemyViewDir {entityB.getComponent<CTransform>().scale.x * -1, 0.f};
   if(enemyViewDir.dot(dist.normalize()) < M_FOV) return false;
 
   //Is there no visual barrier in front of the enemy?
@@ -1107,25 +1262,21 @@ bool playerVisibility(Entity& entityA, Entity& entityB, std::vector<Entity> allE
     CTag& tag = e.getComponent<CTag>();
     if(!(tag.tag == Object::TileBbox ||
        tag.tag == Object::SlideRBbox ||
-       tag.tag == Object::SlideLBbox)) continue;
+       tag.tag == Object::SlideLBbox ||
+       tag.tag == Object::Ladder)) continue;
 
-    Vec2 pos = e.getComponent<CTransform>().pos;
-    Vec2 hSize = e.getComponent<CBoundingBox>().halfSize;
+    Vec2& pos = e.getComponent<CTransform>().pos;
+    Vec2& hSize = e.getComponent<CBoundingBox>().halfSize;
 
-    
     //Comparing with 4 sides of BoundingBox
     
-    if(Collision::lineIntersect(playerPos, enemyPos, pos + hSize,
-                                Vec2{pos.x + hSize.x, pos.y - hSize.y}) != 0.f)
-      return false;
-    if(Collision::lineIntersect(playerPos, enemyPos, pos - hSize,
-                                Vec2{pos.x - hSize.x, pos.y + hSize.y}) != 0.f)
-      return false;
-    if(Collision::lineIntersect(playerPos, enemyPos, pos - hSize,
-                                Vec2{pos.x + hSize.x, pos.y - hSize.y}) != 0.f)
-      return false;
-    if(Collision::lineIntersect(playerPos, enemyPos, pos + hSize,
-                                Vec2{pos.x - hSize.x, pos.y + hSize.y}) != 0.f)
+    Vec2 intersectP = Collision::lineIntersect(playerPos, enemyPos,
+                                      Vec2{pos.x, pos.y + hSize.y},
+                                      Vec2{pos.x, pos.y - hSize.y});
+
+    // if(intersectP.x != 0 && intersectP.y != 0)
+      // std::cout <<"intersectP: " << intersectP.x << "\t" << intersectP.y << std::endl;
+    if(intersectP != 0)
       return false;
   }
   return true;
@@ -1156,7 +1307,6 @@ void ScenePrologue::sEnemyAI()
     bool EnemyCanSeePlayer   = playerVisibility(player, e, m_entityManager.getEntities());
     float playerDistance     = playerTr.pos.distance(eTr.pos);
     bool playerEnemyCollide  = Collision::getOverlap(player, e) != 0;
-    
     // AI state switching
     switch (enemyAI.enemyState)
     {
@@ -1195,42 +1345,42 @@ void ScenePrologue::sEnemyAI()
     
     if(enemyAI.prevEnemyState != enemyAI.enemyState)
     { 
-      std::cout << "Clear path ";
+      // std::cout << "Clear path ";
       enemyAI.hawePath = false;
       enemyAI.path.clear();
     }
 
-    if(eTr.scale.x == -1)
-    {
-      std::cout << "-->";
-    }
-    else if(eTr.scale.x == 1)
-    {
-      std::cout << "<--";
-    }
+    // if(eTr.scale.x == -1)
+    // {
+    //   std::cout << "-->";
+    // }
+    // else if(eTr.scale.x == 1)
+    // {
+    //   std::cout << "<--";
+    // }
 
     enemyAI.prevEnemyState = enemyAI.enemyState;
-    
-    if(enemyAI.enemyState == EnemyState::Patrol)
-    {
-      std::cout << "State  Patrol ";
-    }
-    else if(enemyAI.enemyState == EnemyState::canAttack)
-    {
-      std::cout << "State  canAttack ";
-    }
-    else if(enemyAI.enemyState == EnemyState::Attack)
-    {
-      std::cout << "State  Attack ";
-    }
 
-    for (auto& i : enemyAI.path)
-      std::cout << i << " ";
-    
-    std::cout << " CoPlayerNodeId: " << collidedPlayerNodeId << ", ";
-    std::cout << " Path state: " << enemyAI.hawePath;
-    std::cout << std::endl;
-
+    // if(enemyAI.enemyState == EnemyState::Patrol)
+    // {
+    //   std::cout << "State  Patrol ";
+    // }
+    // else if(enemyAI.enemyState == EnemyState::canAttack)
+    // {
+    //   std::cout << "State  canAttack ";
+    // }
+    // else if(enemyAI.enemyState == EnemyState::Attack)
+    // {
+    //   std::cout << "State  Attack ";
+    // }
+    //
+    // for (auto& i : enemyAI.path)
+    //   std::cout << i << " ";
+    //
+    // std::cout << " CoPlayerNodeId: " << collidedPlayerNodeId << ", ";
+    // std::cout << " Path state: " << enemyAI.hawePath;
+    // std::cout << std::endl;
+    //
     unsigned short collidedEnemyNodeId = 0; 
     
     for (NavigationNode& n : nodes)
@@ -1261,7 +1411,6 @@ void ScenePrologue::sEnemyAI()
 
           if (calculatedPathes.empty()) continue;
          
-         std::cout << "Size: " << calculatedPathes.size() << "\n";
           if(calculatedPathes.size() > 1)
           {
             m_gameEngine->getRandGen().seed(
@@ -1375,5 +1524,38 @@ void ScenePrologue::sEnemyAI()
         eInput.attack = true;
       }
     } 
+  }
+}
+
+void  ScenePrologue::sLife(sf::Time deltaTime)
+{
+  for (Entity& e : m_entityManager.getEntities())
+  {
+    if(!e.getComponent<CActive>().active) continue;
+    
+    CHp& eHp = e.getComponent<CHp>();
+    CState& eState = e.getComponent<CState>();
+    CAnimation& eAnim = e.getComponent<CAnimation>();
+    if(eHp.healthPoints <= 0 && !eState.died)
+    {
+      CTag& eTag = e.getComponent<CTag>();
+      switch (eTag.tag)
+      {
+      case Object::Player:
+        eAnim.animation = m_gameEngine->getAssets().getAnimation("Die_Anim");
+        eState.died = true;
+        break;
+      case Object::Mushroom:
+        eAnim.animation = m_gameEngine->getAssets().getAnimation("Mushroom_Die_Anim");
+        eState.died = true;
+        break;
+      default:
+        break;
+      }
+    }
+    else if(eState.died && eAnim.animation.isFinished())
+    {
+      m_entityManager.destroyEntity(e);  
+    }
   }
 }

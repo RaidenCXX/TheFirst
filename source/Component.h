@@ -129,7 +129,8 @@ public:
   bool onGround = false;
   bool canClimb = false;
   bool climp = false;
-  bool slide = false;  
+  bool slide = false;
+  bool died  = false;
 
   CState () = default;
   CState (bool activate) :Component(true) { }
@@ -142,6 +143,7 @@ public:
   sf::Time  comboTimer;
   bool      attacking = false;
   bool      bufferedAttack = false;
+  bool      damageOnThisAnim = false;
   
   CAttack () {}
   CAttack (sf::Time&& comboTimer)
@@ -152,24 +154,24 @@ class CWeapon :public Component
 {
 public:
   std::vector<Weapon> weaponInventory;
-  Weapon* firstWeapon = nullptr;
-  Weapon* secondWeapon = nullptr;
+  Weapon *firstWeapon = nullptr;
+  Weapon *secondWeapon = nullptr;
 
   CWeapon () 
-    :weaponInventory(), firstWeapon(), secondWeapon()
-    {
-      weaponInventory.resize(INVENTORY_SIZE);
-      firstWeapon = &weaponInventory[0];
-      secondWeapon = &weaponInventory[1];
-    }
+  :weaponInventory(), firstWeapon(), secondWeapon()
+  {
+    weaponInventory.resize(INVENTORY_SIZE);
+    firstWeapon = &weaponInventory[0];
+    secondWeapon = &weaponInventory[1];
+  }
 
   CWeapon (Weapon&& firstWeapon) 
-    :Component(true), weaponInventory(), firstWeapon(), secondWeapon()
-    {
-      weaponInventory.resize(INVENTORY_SIZE);
-      weaponInventory[0] = std::move(firstWeapon);
-      this->firstWeapon = &weaponInventory[0];
-    }
+  :Component(true), weaponInventory(), firstWeapon(), secondWeapon()
+  {
+    weaponInventory.resize(INVENTORY_SIZE);
+    weaponInventory[0] = std::move(firstWeapon);
+    this->firstWeapon = &weaponInventory[0];
+  }
 };
 
 class CEnemyAI :public Component
@@ -193,7 +195,7 @@ public:
 class CHp :public Component
 {
 public:
-  unsigned short healthPoints;
+  int healthPoints;
   
   CHp() :healthPoints(0) {}
   CHp(unsigned short healthPoints)
